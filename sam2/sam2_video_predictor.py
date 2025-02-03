@@ -325,7 +325,17 @@ class SAM2VideoPredictor(SAM2Base):
                 mode="bilinear",
                 antialias=True,  # use antialias for downsampling
             )
-            mask_inputs = (mask_inputs >= 0.5).float()
+
+            mask_inputs = mask_input - 1
+            # Calculate gradient
+            gradient_x, gradient_y = np.gradient(mask_inputs)
+
+            # Calculate magnitude
+            magnitude = np.sqrt(gradient_x**2 + gradient_y**2)
+
+            mask_inputs = mask_inputs*magnitude
+            mask_inputs = (mask_inputs >= 0).float() # 0.01 works well
+            #mask_inputs = (mask_inputs >= 0.5).float()
         else:
             mask_inputs = mask_inputs_orig
 
@@ -436,7 +446,7 @@ class SAM2VideoPredictor(SAM2Base):
         # negative value (NO_OBJ_SCORE) to represent missing objects.
         consolidated_out = {
             consolidated_mask_key: torch.full(
-                size=(batch_size, 1, consolidated_H, consolidated_W),
+                size=(batch_size, 3, consolidated_H, consolidated_W),
                 fill_value=NO_OBJ_SCORE,
                 dtype=torch.float32,
                 device=inference_state["storage_device"],
@@ -550,6 +560,7 @@ class SAM2VideoPredictor(SAM2Base):
         max_frame_num_to_track=None,
         reverse=False,
     ):
+        import numpy as np
         """Propagate the input points across frames to track in the entire video."""
         self.propagate_in_video_preflight(inference_state)
 
@@ -627,6 +638,30 @@ class SAM2VideoPredictor(SAM2Base):
             _, video_res_masks = self._get_orig_video_res_output(
                 inference_state, all_pred_masks
             )
+
+                        # Check if pred masks is blank. If so, then return list so far
+            quit_out = False
+            activate_quit_latch = True
+            if activate_quit_latch:
+                quit_out = True
+            print('3.14159')
+            print('ENTERING LOOP12345') # N.B.> for some reason print statements only down here work.
+            # worth debugging further to determine the cause/flow of code. 1/24/25
+            for mask in all_pred_masks:
+                print('ANALYZING MASKS!!!!!')
+                arr = mask.cpu().numpy().flatten()
+                print(arr)
+                print(arr[0])
+                print(np.equal(arr, arr[0]))
+                print(np.all(np.equal(arr, arr[0])))
+                if not np.all(np.equal(arr, arr[0])):
+                    print('breaking out of quit loop')
+                    quit_out = False
+                    break
+            yield frame_idx, obj_ids, video_res_masks
+            if quit_out:
+                print('Non-contiguity detected during video prediction. Exiting for loop.')
+                break
             yield frame_idx, obj_ids, video_res_masks
 
     @torch.inference_mode()
@@ -1040,6 +1075,7 @@ class SAM2VideoPredictorVOS(SAM2VideoPredictor):
         mask_inputs=None,
         high_res_features=None,
         multimask_output=False,
+        frame_idx=0,
     ):
         """
         Identical to the corresponding method in the parent (SAM2VideoPredictor), but
@@ -1104,6 +1140,7 @@ class SAM2VideoPredictorVOS(SAM2VideoPredictor):
             multimask_output=multimask_output,
             repeat_image=False,  # the image is already batched
             high_res_features=high_res_features,
+            frame_idx=frame_idx
         )
         # Clone the output of sam_mask_decoder
         # to enable compilation

@@ -261,6 +261,7 @@ class SAM2Base(torch.nn.Module):
         mask_inputs=None,
         high_res_features=None,
         multimask_output=False,
+        frame_idx=0
     ):
         """
         Forward SAM prompt encoders and mask heads.
@@ -352,9 +353,10 @@ class SAM2Base(torch.nn.Module):
             image_pe=self.sam_prompt_encoder.get_dense_pe(),
             sparse_prompt_embeddings=sparse_embeddings,
             dense_prompt_embeddings=dense_embeddings,
-            multimask_output=multimask_output,
+            multimask_output=True,#multimask_output,
             repeat_image=False,  # the image is already batched
             high_res_features=high_res_features,
+            frame_idx=frame_idx
         )
         if self.pred_obj_scores:
             is_obj_appearing = object_score_logits > 0
@@ -370,15 +372,52 @@ class SAM2Base(torch.nn.Module):
         # convert masks from possibly bfloat16 (or float16) to float32
         # (older PyTorch versions before 2.1 don't support `interpolate` on bf16)
         low_res_multimasks = low_res_multimasks.float()
+
+
+        # PUT THE GRADIENT HERE!
+        # Calculate gradient
+        # import pickle
+        # manual_pkl = False
+        # sam_pkl = False
+        # if sam_pkl:
+        #     with open('07_1064_Bifrontal_pkl_{0}.pkl'.format(frame_idx),'wb') as f:
+        #         print('writing {0}'.format(frame_idx))
+        #         pickle.dump(low_res_multimasks[0][0]-0.25+1, f)
+        # if manual_pkl:
+        #     with open('07_1064_Bifrontal_pkl_Manual_{0}.pkl'.format(frame_idx),'wb') as f:
+        #         print('writing {0}'.format(frame_idx))
+        #         pickle.dump(backbone_features, f)
+        mps_device = torch.device("mps:0")
+        import numpy as np
+        # mask_inputs = low_res_multimasks[0][0] - 0
+        # # print(mask_inputs.shape)
+        # # # Calculate gradient
+        # # gx,gy=np.gradient(mask_inputs.cpu().numpy())
+        # #
+        # # # Calculate magnitude
+        # # magnitude = np.sqrt(gx**2 + gy**2)
+        # #
+        # mask_inputs = mask_inputs.cpu().numpy()#*magnitude
+        # mask_inputs = (mask_inputs >= 0.5) # 0.01 works well
+        # #
+        # mask_res = torch.zeros(1,1,256,256)
+        # mask_res[0] = torch.from_numpy(mask_inputs)
+        # mask_for_mem =  (mask_res > 0).float().to(mps_device)
+        # low_res_multimasks = mask_for_mem
+
         high_res_multimasks = F.interpolate(
             low_res_multimasks,
             size=(self.image_size, self.image_size),
             mode="bilinear",
             align_corners=False,
         )
+        print(high_res_multimasks.shape)
+        #quit()
+
+        ########
 
         sam_output_token = sam_output_tokens[:, 0]
-        if multimask_output:
+        if False:#multimask_output:
             # take the best mask prediction (with the highest IoU estimation)
             best_iou_inds = torch.argmax(ious, dim=-1)
             batch_inds = torch.arange(B, device=device)
@@ -782,6 +821,7 @@ class SAM2Base(torch.nn.Module):
                 mask_inputs=mask_inputs,
                 high_res_features=high_res_features,
                 multimask_output=multimask_output,
+                frame_idx=frame_idx
             )
 
         return current_out, sam_outputs, high_res_features, pix_feat

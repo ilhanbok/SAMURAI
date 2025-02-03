@@ -116,6 +116,7 @@ class MaskDecoder(nn.Module):
         multimask_output: bool,
         repeat_image: bool,
         high_res_features: Optional[List[torch.Tensor]] = None,
+        frame_idx = 0
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Predict masks given image and prompt embeddings.
@@ -141,6 +142,15 @@ class MaskDecoder(nn.Module):
             repeat_image=repeat_image,
             high_res_features=high_res_features,
         )
+
+        #print(image_embeddings.size())
+        #quit()
+        # # 1/28/2025
+        # import pickle
+        # # Write image embeddings to file
+        # with open('07_1064_Bifrontal_pkl_Manual_{0}.pkl'.format(frame_idx),'wb') as f:
+        #     print('writing {0}'.format(frame_idx))
+        #     pickle.dump(image_embeddings, f)
 
         # Select the correct mask or masks for output
         if multimask_output:

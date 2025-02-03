@@ -136,6 +136,93 @@ def build_sam2_video_predictor(
     model = instantiate(cfg.model, _recursive_=True)
     _load_checkpoint(model, ckpt_path)
     model = model.to(device)
+
+    ## Test code below (1/28/2025)
+    # 1. Set the model to training mode
+    # model.train()
+
+    # 2. Forward pass: Calculate the output of the model
+    #output = model(input_data) # currently not needed for testing
+
+    # 3. Calculate the loss
+
+    #old model output
+    # import nibabel as nib
+    # M_out = nib.load('/Users/bok/Library/CloudStorage/Box-Box/Belton_Lab_Ilhan/QSM_Pipeline_Belton_Lab/qsm-proc-main/Segmentation_Results/03_1097_M.nii.gz').get_fdata()
+    # delta = 1
+
+    def downsample(image):
+        m1 = nn.Conv2d(
+            in_channels=1152,
+            out_channels=256,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+        )
+        m2 = nn.Conv2d(
+            in_channels=576,
+            out_channels=256,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+        )
+        m3 = nn.Conv2d(
+            in_channels=288,
+            out_channels=256,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+        )
+        m4 = nn.Conv2d(
+            in_channels=144,
+            out_channels=256,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+        )
+        ri = torch.zeros((1,1,256,256))
+        ri[0,0,:,:] = torch.tensor(image).float()
+        print(m1(ri))
+        image2 = m4(m3(m2(m1(image))))
+        return image2
+
+
+    # import pickle
+    # import torch.nn as nn
+    # from torch.autograd import Variable
+    # for frame in range(126,190):
+    #     print('Frame: {0}'.format(frame))
+    #     with open('07_1064_Bifrontal_pkl_{0}.pkl'.format(frame),'rb') as f:
+    #         M = pickle.load(f)
+    #     with open('07_1064_Bifrontal_pkl_Manual_{0}.pkl'.format(frame),'rb') as f:
+    #         NN = pickle.load(f)
+    #         print(NN.shape)
+    #     print(M)
+    #     delta = 1
+    #     loss = (NN.cpu() - M.cpu() + delta - 1)
+    #     plt.imshow(loss.numpy())
+    #     plt.colorbar()
+    #     plt.title('Loss matrix for 07_1064')
+    #     plt.show()
+    #     loss = Variable(np.multiply(loss,loss),requires_grad=True)
+    #
+    #     # 4. Backpropagation: Calculate gradients
+    #     loss.sum().backward()
+    #
+    #     LEARNING_RATE = 0.9 #(-1 to 1)
+    #     # 5. Update the model's weights and biases using an optimizer (e.g., SGD)
+    #     optimizer = torch.optim.SGD(model.parameters(), lr=LEARNING_RATE)
+    #     optimizer.step()
+    #     import matplotlib.pyplot as plt
+    #     # 6. Reset gradients for the next iteration
+    #     optimizer.zero_grad()
+    #     # plt.imshow(loss,cmap='jet')
+    #     # plt.colorbar()
+    #     # plt.show()
+    #
+    #     input('Looks good?')
+    #     ## carry on, facebook
+
     if mode == "eval":
         model.eval()
     return model
@@ -161,6 +248,23 @@ def build_sam2_video_predictor_hf(model_id, **kwargs):
     )
 
 
+import numpy as np
+
+def sigmoid(x, slope = 1):
+  return 1 / (1 + torch.exp(-slope*x))
+
+def map_weights(tensor, thresh = 0.01, scale = 5):
+
+    print(np.where(np.abs(tensor)<thresh))
+    # Apply weights to the tensor
+    tensor[np.invert(np.abs(tensor)<thresh)] = tensor[np.invert(np.abs(tensor)<thresh)]*scale
+    tensor[np.abs(tensor)<thresh] = tensor[np.abs(tensor)<thresh]/scale
+
+    # Apply sigmoid upscaling
+    tensor = tensor*sigmoid(tensor,2)
+    return tensor
+
+
 def _load_checkpoint(model, ckpt_path):
     if ckpt_path is not None:
         sd = torch.load(ckpt_path, map_location="cpu", weights_only=True)["model"]
@@ -172,3 +276,19 @@ def _load_checkpoint(model, ckpt_path):
             logging.error(unexpected_keys)
             raise RuntimeError()
         logging.info("Loaded checkpoint sucessfully")
+
+        sd["sam_mask_decoder.output_hypernetworks_mlps.0.layers.0.weight"] = map_weights(sd["sam_mask_decoder.output_hypernetworks_mlps.0.layers.0.weight"])
+        #sd["sam_mask_decoder.output_hypernetworks_mlps.0.layers.1.weight"] = map_weights(sd["sam_mask_decoder.output_hypernetworks_mlps.0.layers.1.weight"])
+        #sd["sam_mask_decoder.output_hypernetworks_mlps.0.layers.2.weight"] = map_weights(sd["sam_mask_decoder.output_hypernetworks_mlps.0.layers.2.weight"])
+
+        sd["sam_mask_decoder.output_hypernetworks_mlps.1.layers.0.weight"] = map_weights(sd["sam_mask_decoder.output_hypernetworks_mlps.1.layers.0.weight"])
+        #sd["sam_mask_decoder.output_hypernetworks_mlps.1.layers.1.weight"] = map_weights(sd["sam_mask_decoder.output_hypernetworks_mlps.1.layers.1.weight"])
+        #sd["sam_mask_decoder.output_hypernetworks_mlps.1.layers.2.weight"] = map_weights(sd["sam_mask_decoder.output_hypernetworks_mlps.1.layers.2.weight"])
+
+        sd["sam_mask_decoder.output_hypernetworks_mlps.2.layers.0.weight"] = map_weights(sd["sam_mask_decoder.output_hypernetworks_mlps.2.layers.0.weight"])
+        #sd["sam_mask_decoder.output_hypernetworks_mlps.2.layers.1.weight"] = map_weights(sd["sam_mask_decoder.output_hypernetworks_mlps.2.layers.1.weight"])
+        #sd["sam_mask_decoder.output_hypernetworks_mlps.2.layers.2.weight"] = map_weights(sd["sam_mask_decoder.output_hypernetworks_mlps.2.layers.2.weight"])
+
+        sd["sam_mask_decoder.output_hypernetworks_mlps.3.layers.0.weight"] = map_weights(sd["sam_mask_decoder.output_hypernetworks_mlps.3.layers.0.weight"])
+        #sd["sam_mask_decoder.output_hypernetworks_mlps.3.layers.1.weight"] = map_weights(sd["sam_mask_decoder.output_hypernetworks_mlps.3.layers.1.weight"])
+        #sd["sam_mask_decoder.output_hypernetworks_mlps.3.layers.2.weight"] = map_weights(sd["sam_mask_decoder.output_hypernetworks_mlps.3.layers.2.weight"])

@@ -1,4 +1,17 @@
-# SAM 2: Segment Anything in Images and Videos
+# SAMurai-o
+
+## Introduction
+
+
+
+## Installation
+
+Begin by following the instructions below for installing SAM2 from FaceBook.
+
+
+## Usage
+
+## About/Contact Information
 
 **[AI at Meta, FAIR](https://ai.meta.com/research/)**
 
