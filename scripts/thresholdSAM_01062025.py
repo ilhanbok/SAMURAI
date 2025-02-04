@@ -28,7 +28,7 @@ if __name__ == '__main__':
     else:
         print('Mode RAW')
         input('Press Enter to continue.')
-        labeled_array = RAW_segment.main(nifti_path, output_csv, image_mode, thresh, flip, bluramt, skullstrip)
+        labeled_array = RAW_segment.main(nifti_path, output_csv, thresh, flip, bluramt, skullstrip)
     # Read CSV
     list_of_centroids = []
     list_of_corresponding_indices = []

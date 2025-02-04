@@ -324,10 +324,6 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
         sortByVolume = True
         if sortByVolume:
             v_s = volumes_unsorted.argsort()
-            print(len(list_of_corresponding_indices_unsorted))
-            print(len(list_of_centroids_unsorted))
-            print(len(volumes_unsorted))
-            #quit()
             list_of_corresponding_indices = list_of_corresponding_indices_unsorted[v_s[::-1]]
             list_of_centroids = list_of_centroids_unsorted[v_s[::-1]]
             volumes = volumes_unsorted[v_s[::-1]]
@@ -335,12 +331,6 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
             list_of_corresponding_indices = list_of_corresponding_indices_unsorted
             list_of_centroids = list_of_centroids_unsorted
             volumes = volumes_unsorted
-        print(list_of_corresponding_indices)
-        print(list_of_centroids)
-        print(volumes)
-        #quit()
-    print(np.max(list_of_corresponding_indices))
-    print(pd.unique(list_of_corresponding_indices))
     #quit()
     # Generate threshold classifier
     thresholded_img_classifier = data.copy()
@@ -419,8 +409,6 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
             threshold = 10
             #box_prev = get_bounding_box(im,threshold)
             #box = [box_prev[1],box_prev[0],box_prev[3],box_prev[2]]
-            print(slices[:,0])
-            #quit()
             print('Volume:')
             print(unique_vols[curr_e])
             plt.scatter(slices[:,1],slices[:,0],color='#FF0000',alpha=0.2)
@@ -505,18 +493,12 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
             #for j in range(len(bg_permuted)):
             #    coordinates.append((bg_permuted[j][1],bg_permuted[j][0]))
             #    labels.append(0)#labeled_array_SAM[bg_permuted[j][1],bg_permuted[j][0],bg_permuted[j][2]])
-            print(len(coordinates))
-            print(len(labels))
             #slices_permuted = slices
             num_centroids = len(slices_permuted)
             for j in range(num_centroids):
                 coordinates.append((slices_permuted[j][1],slices_permuted[j][0]))
                 labels = np.append(labels,1)
             points = np.array(coordinates, dtype=np.float32)
-
-
-            print(len(points))
-            print(len(labels))
 
             _, out_obj_ids, out_mask_logits = video_predictor.add_new_points_or_box(
                 inference_state=inference_state,

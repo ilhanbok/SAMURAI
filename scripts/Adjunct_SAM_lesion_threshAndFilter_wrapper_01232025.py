@@ -6,7 +6,7 @@ import nibabel as nib
 from scipy.ndimage import rotate, shift
 from skimage.measure import regionprops, label
 import os
-
+import sys
 
 if __name__ == '__main__':
     print('Usage: python Adjunct_SAM_lesion_threshAndFilter_wrapper_01232025.py NIFTI_PATH')

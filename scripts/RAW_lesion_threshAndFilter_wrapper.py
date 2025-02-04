@@ -2,7 +2,7 @@
 # feedback or peak splitting
 # Jan 2, 2025 | Ilhan Bok, Patrick Belton
 
-def main(nifti_path, output_csv = "RAW.csv", RAW_cutoff = 400, flip = False, blur = 0, skull_strip = False):
+def main(nifti_path, output_csv = "RAW.csv", RAW_cutoff = 400, flip = False, sigma = 0, skull_strip = False):
     import numpy as np
     import nibabel as nib
     import sys
@@ -27,7 +27,6 @@ def main(nifti_path, output_csv = "RAW.csv", RAW_cutoff = 400, flip = False, blu
     # Load NIfTI image
     nifti_image = nib.load(nifti_path)
     image_data = nifti_image.get_fdata()
-    print(np.max(image_data))
 
     if skull_strip:
         output_path = "./temp_sks.nii.gz"
@@ -37,8 +36,8 @@ def main(nifti_path, output_csv = "RAW.csv", RAW_cutoff = 400, flip = False, blu
         nifti_image = nib.load(output_path)
         image_data = nifti_image.get_fdata()
 
-    if blur > 0:
-        image_data = gaussian_filter(image_data,sigma=blur)
+    if sigma > 0:
+        image_data = gaussian_filter(image_data,sigma)
 
         nifti_mask = nib.Nifti1Image(image_data, affine=nib.load(nifti_path).affine)
         nib.save(nifti_mask,'{0}_gaub_sigma={1}.nii'.format(nifti_path,sigma));
@@ -46,13 +45,11 @@ def main(nifti_path, output_csv = "RAW.csv", RAW_cutoff = 400, flip = False, blu
     if flip:
         id_max = np.max(image_data)
         image_data = np.divide(np.subtract(id_max,image_data),id_max)
-        print(image_data)
         plt.imshow(image_data[:,:,50])
         plt.show()
         #sys.exit(1)
         # Update cutoff to normalized data
         RAW_cutoff = np.divide(np.subtract(id_max,RAW_cutoff),id_max)
-        print(RAW_cutoff)
         thresholded_img = image_data.copy()
     else:
         thresholded_img = image_data
