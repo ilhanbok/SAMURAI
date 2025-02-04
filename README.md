@@ -1,8 +1,8 @@
-# SAMurai-o
+# SAMURAI (Segment Anything Model Used for Radiomic Analysis of Images)
 
 ## Introduction
 
-
+See our abstract *Machine Learning Segmentation of Magnetic Resonance Images for Radiomics of Traumatic Brain Injury Hematomata*
 
 ## Installation
 
