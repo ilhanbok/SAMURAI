@@ -1,4 +1,8 @@
-# SAMURAI (**S**egment **A**nything **M**odel **U**tilized for **R**adiomic **A**nalysis of **I**mages) 
+# SAMURAI (**S**egment **A**nything **M**odel **U**tilized for **R**adiomic **A**nalysis of **I**mages)
+<br>
+<p align="center">
+<img src="logo/Samurai_Helmet_Icon-2.png" width="200" center>
+
 
 ## Introduction
 
