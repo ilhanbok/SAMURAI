@@ -11,10 +11,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 if __name__ == '__main__':
-    print('Usage: python thresholdSAM.py NIFTI_PATH output_csv(.csv) mode(QSM or RAW)')
+    print('Usage: python thresholdSAM.py NIFTI_PATH output_csv(.csv) mode(QSM or RAW) threshold(e.g. 400) flip(lesions are dark?) blur(gaussian blur amount to hide artifacts?) skullstrip(strip skull or not?)')
     nifti_path = str(sys.argv[1])
     output_csv = sys.argv[2]
     image_mode = sys.argv[3]
+    thresh = float(sys.argv[4])
+    flip = bool(sys.argv[5])
+    bluramt = float(sys.argv[6])
+    skullstrip = bool(sys.argv[7])
     print(sys.argv[1])
     # Generate CSV
     if image_mode == "QSM":
@@ -23,7 +27,8 @@ if __name__ == '__main__':
         labeled_array = QSM_segment.main(output_csv)
     else:
         print('Mode RAW')
-        labeled_array = RAW_segment.main(nifti_path, output_csv)
+        input('Press Enter to continue.')
+        labeled_array = RAW_segment.main(nifti_path, output_csv, image_mode, thresh, flip, bluramt, skullstrip)
     # Read CSV
     list_of_centroids = []
     list_of_corresponding_indices = []

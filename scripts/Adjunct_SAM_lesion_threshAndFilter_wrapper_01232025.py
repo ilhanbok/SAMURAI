@@ -7,6 +7,11 @@ from scipy.ndimage import rotate, shift
 from skimage.measure import regionprops, label
 import os
 
+
+if __name__ == '__main__':
+    print('Usage: python Adjunct_SAM_lesion_threshAndFilter_wrapper_01232025.py NIFTI_PATH')
+    nifti_path = str(sys.argv[1])
+
 import pickle
 
 def compute_asymmetry_index(slice,i):
@@ -158,7 +163,7 @@ model_cfg = "configs/sam2.1/sam2.1_hiera_l.yaml"
 #nifti_path="/Users/bok/Library/CloudStorage/Box-Box/Belton_Lab_Ilhan/QSM_Pipeline_Belton_Lab/qsm-proc-main/tgv/07_1064/16_3D_T2_TSE.nii.gz"
 #nifti_path="/Users/bok/Library/CloudStorage/Box-Box/Belton_Lab_Ilhan/QSM_Pipeline_Belton_Lab/qsm-proc-main/Tif_07_1064_TRANSPOSED.nii.gz"
 
-nifti_path="/Users/bok/Documents/07_1096/SESSIONS/20150521/ACQUISITIONS/3_SAG_SWI_3D/FILES/3_SAG_SWI_3D.nii.gz"
+
 # Load NIfTI image
 nifti_image = nib.load(nifti_path)
 image_data = nifti_image.get_fdata()

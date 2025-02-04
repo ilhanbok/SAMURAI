@@ -2,7 +2,7 @@
 # feedback or peak splitting
 # Jan 2, 2025 | Ilhan Bok, Patrick Belton
 
-def main(nifti_path, output_csv = "RAW.csv"):
+def main(nifti_path, output_csv = "RAW.csv", RAW_cutoff = 400, flip = False, blur = 0, skull_strip = False):
     import numpy as np
     import nibabel as nib
     import sys
@@ -14,7 +14,7 @@ def main(nifti_path, output_csv = "RAW.csv"):
     # Lower cutoffs are more leninet
     #RAW_cutoff = 200 (Mag lesions 02_1070)
     #RAW_cutoff = 270 (GRE 01_1007)
-    RAW_cutoff = 400 # raise a bit or lower a bit.
+    #RAW_cutoff = 400 # raise a bit or lower a bit.
 
     # good cutoffs from trial/error:
     # GRE images: 270
@@ -29,7 +29,6 @@ def main(nifti_path, output_csv = "RAW.csv"):
     image_data = nifti_image.get_fdata()
     print(np.max(image_data))
 
-    skull_strip = False
     if skull_strip:
         output_path = "./temp_sks.nii.gz"
         command = ["bet", nifti_path, output_path, "-m", "-f", str(0.1)]
@@ -38,14 +37,12 @@ def main(nifti_path, output_csv = "RAW.csv"):
         nifti_image = nib.load(output_path)
         image_data = nifti_image.get_fdata()
 
-    gaussian_blur = False
-    sigma = 0.2
-    if gaussian_blur:
-        image_data = gaussian_filter(image_data,sigma=sigma)
+    if blur > 0:
+        image_data = gaussian_filter(image_data,sigma=blur)
 
         nifti_mask = nib.Nifti1Image(image_data, affine=nib.load(nifti_path).affine)
         nib.save(nifti_mask,'{0}_gaub_sigma={1}.nii'.format(nifti_path,sigma));
-    flip = True
+
     if flip:
         id_max = np.max(image_data)
         image_data = np.divide(np.subtract(id_max,image_data),id_max)
