@@ -1,9 +1,13 @@
-# SAMURAI (Segment Anything Model Utilized for Radiomic Analysis of Images)
+# SAMURAI (**S**egment **A**nything **M**odel **U**tilized for **R**adiomic **A**nalysis of **I**mages) 
 
 ## Introduction
 
-See our abstract *Machine Learning Segmentation of Magnetic Resonance Images for Radiomics of Traumatic Brain Injury Hematomata*, Neurotrauma 2025 (Philadelphia, PA)
-Adaptation of SAM2 for segmentation of brain hematomata
+See our abstract:
+> *Machine Learning Segmentation of Magnetic Resonance Images for Radiomics of Traumatic Brain Injury Hematomata*, Neurotrauma 2025 (Philadelphia, PA)
+
+Adaptation of SAM2 for segmentation of brain hematomata.
+
+**NOTE:** This software is not intended for clinical use.
 
 ## Installation
 
@@ -14,22 +18,24 @@ Begin by following the instructions below for installing SAM2 from Facebook. Onc
 There are two modes of operation: (i) Manual (GUI-based) selection and (ii) threshold-based lesion identification.
 
 To use mode (i);
-1. Run `python Adjunct_SAM_lesion_threshAndFilter_wrapper_01232025.py <nii file name>`
-2. Click on the points within the frame which you believe to be either intra-lesional (fg:1) or extra-lesional (bg:0).
-3. Follow the commands given on-screen.
-4. The segmented lesion will be saved to a `.nii.gz` file with the lesion ID as part of the name.
+- Run `python Adjunct_SAM_lesion_threshAndFilter_wrapper_01232025.py <nii file name>`
+- Click on the points within the frame which you believe to be either intra-lesional (fg:1) or extra-lesional (bg:0).
+- Follow the commands given on-screen.
+- The segmented lesion will be saved to a `.nii.gz` file with the lesion ID as part of the name.
 
 To use mode (ii):
-1. Usage: `python thresholdSAM_01062025.py NIFTI_PATH output_csv(.csv) mode(QSM or RAW) threshold(e.g.400) flip(lesions are dark?) blur(gaussian blur to hide artifacts?) skullstrip(strip skull or not?)`
-2. There will be a loading bar and a GUI dictating whether you want to `accept` each lesion or not. If you decline, that lesion will be skipped and the program will iterate through all additional lesions
+- Usage: `python thresholdSAM_01062025.py NIFTI_PATH output_csv(.csv) mode(QSM or RAW) threshold(e.g.400) flip(lesions are dark?) blur(gaussian blur to hide artifacts?) skullstrip(strip skull or not?)`
+- There will be a loading bar and a GUI dictating whether you want to `accept` each lesion or not. If you decline, that lesion will be skipped and the program will iterate through all additional lesions
 
 ## About/Contact Information
 
 Patrick Belton (belton@neurosurgery.wisc.edu)<br>
 Ilhan Bok (ibok@wisc.edu)
 
-School of Medicine and Public Health
+Department of Neurological Surgery<br>
+School of Medicine and Public Health<br>
 University of Wisconsin - Madison
+# Segment Anything Model 2 (SAM2)
 
 **[AI at Meta, FAIR](https://ai.meta.com/research/)**
 
