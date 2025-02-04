@@ -3,10 +3,13 @@
 ## Introduction
 
 See our abstract *Machine Learning Segmentation of Magnetic Resonance Images for Radiomics of Traumatic Brain Injury Hematomata*, Neurotrauma 2025 (Philadelphia, PA)
+Adaptation of SAM2 for segmentation of brain hematomata
 
 ## Installation
 
 Begin by following the instructions below for installing SAM2 from Facebook. Once SAM2 has been installed, follow the below instructions:
+
+## Usage
 
 There are two modes of operation: (i) Manual (GUI-based) selection and (ii) threshold-based lesion identification.
 
@@ -17,12 +20,13 @@ To use mode (i);
 4. The segmented lesion will be saved to a `.nii.gz` file with the lesion ID as part of the name.
 
 To use mode (ii):
-1. Usage: `python thresholdSAM_01062025.py NIFTI_PATH output_csv(.csv) mode(QSM or RAW) threshold(e.g.400) flip(lesions are dark?) blur(gaussian blur to hide artifacts?) skullstrip(strip skull or not?)`\
+1. Usage: `python thresholdSAM_01062025.py NIFTI_PATH output_csv(.csv) mode(QSM or RAW) threshold(e.g.400) flip(lesions are dark?) blur(gaussian blur to hide artifacts?) skullstrip(strip skull or not?)`
 2. There will be a loading bar and a GUI dictating whether you want to `accept` each lesion or not. If you decline, that lesion will be skipped and the program will iterate through all lesions
 
-## Usage
-
 ## About/Contact Information
+
+Patrick Belton (belton@neurosurgery.wisc.edu)
+Ilhan Bok (ibok@wisc.edu)
 
 **[AI at Meta, FAIR](https://ai.meta.com/research/)**
 
