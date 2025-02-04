@@ -1,4 +1,4 @@
-# SAMURAI (Segment Anything Model Used for Radiomic Analysis of Images)
+# SAMURAI (Segment Anything Model Utilized for Radiomic Analysis of Images)
 
 ## Introduction
 
@@ -21,12 +21,15 @@ To use mode (i);
 
 To use mode (ii):
 1. Usage: `python thresholdSAM_01062025.py NIFTI_PATH output_csv(.csv) mode(QSM or RAW) threshold(e.g.400) flip(lesions are dark?) blur(gaussian blur to hide artifacts?) skullstrip(strip skull or not?)`
-2. There will be a loading bar and a GUI dictating whether you want to `accept` each lesion or not. If you decline, that lesion will be skipped and the program will iterate through all lesions
+2. There will be a loading bar and a GUI dictating whether you want to `accept` each lesion or not. If you decline, that lesion will be skipped and the program will iterate through all additional lesions
 
 ## About/Contact Information
 
-Patrick Belton (belton@neurosurgery.wisc.edu)
+Patrick Belton (belton@neurosurgery.wisc.edu)<br>
 Ilhan Bok (ibok@wisc.edu)
+
+School of Medicine and Public Health
+University of Wisconsin - Madison
 
 **[AI at Meta, FAIR](https://ai.meta.com/research/)**
 
