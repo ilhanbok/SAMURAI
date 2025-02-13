@@ -9,7 +9,7 @@
 See our abstract:
 > *Machine Learning Segmentation of Magnetic Resonance Images for Radiomics of Traumatic Brain Injury Hematomata*, Neurotrauma 2025 (Philadelphia, PA)
 
-Adaptation of SAM2 for segmentation of brain hematomata.
+Adaptation of SAM2 for segmentation of brain hematomas.
 
 **NOTE:** This software is not intended for clinical use.
 
