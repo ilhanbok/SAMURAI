@@ -15,7 +15,23 @@ Adaptation of SAM2 for segmentation of brain hematomas.
 
 ## Installation
 
-Begin by following the instructions below for installing SAM2 from Facebook. Once SAM2 has been installed, follow the below instructions:
+```console
+git clone https://github.com/ilhanbok/SAMURAI.git
+cd SAMURAI
+git clone https://github.com/facebookresearch/sam2.git
+cd sam2
+git checkout 2b90b9f5ceec907a1c18123530e92e794ad901a4
+cd checkpoints
+./download_ckpts.sh
+cd ../../scripts
+pip install -r requirements.txt
+```
+Example open-access nifti files are here:
+https://github.com/neurolabusc/niivue-images.git
+
+```console
+git clone https://github.com/neurolabusc/niivue-images.git
+```
 
 ## Usage
 

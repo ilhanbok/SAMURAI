@@ -10,6 +10,7 @@ import sys
 
 if __name__ == '__main__':
     print('Usage: python Adjunct_SAM_lesion_threshAndFilter_wrapper_01232025.py NIFTI_PATH')
+    print('e.g. python Adjunct_SAM_lesion_threshAndFilter_wrapper_01232025.py ../niivue-images/chris_t1.nii.gz')
     nifti_path = str(sys.argv[1])
 
 import pickle
@@ -150,7 +151,7 @@ else:
 print(f"using device: {device}")
 
 
-sam2_checkpoint = "/Users/bok/Library/CloudStorage/Box-Box/Belton_Lab_Ilhan/QSM_Pipeline_Belton_Lab/qsm-proc-main/sam2.1_hiera_large.pt"
+sam2_checkpoint = "../sam2/checkpoints/sam2.1_hiera_large.pt"
 model_cfg = "configs/sam2.1/sam2.1_hiera_l.yaml"
 
 # Load the NIfTI file
