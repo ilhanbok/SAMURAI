@@ -205,7 +205,7 @@ if pickleIt:
     # [79,124,197] #05_1003 (MP_RAGE)
     for n in range(2,3):
         # Load the NIfTI file
-        output_dir = "output_jpeg_stack_temp_1070_2_a"
+        output_dir = "temp_jpeg_stack"
         subprocess.run(['rm','-rf',output_dir])
         os.makedirs(output_dir, exist_ok=True)
 
