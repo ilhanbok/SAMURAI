@@ -15,13 +15,14 @@ Adaptation of SAM2 for segmentation of brain hematomas.
 
 ## Installation
 
-```console
+```bash
 git clone https://github.com/ilhanbok/SAMURAI.git
 cd SAMURAI
 git clone https://github.com/facebookresearch/sam2.git
 cd sam2
 git checkout 2b90b9f5ceec907a1c18123530e92e794ad901a4
 pip install -e .
+mv ../sam2_video_predictor.py .
 cd checkpoints
 ./download_ckpts.sh
 cd ../../scripts
@@ -30,7 +31,7 @@ pip install -r requirements.txt
 Example open-access nifti files are here:
 https://github.com/neurolabusc/niivue-images.git
 
-```console
+```bash
 cd ..
 git clone https://github.com/neurolabusc/niivue-images.git
 cd scripts
