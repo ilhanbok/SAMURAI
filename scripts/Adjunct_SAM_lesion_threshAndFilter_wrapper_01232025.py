@@ -171,30 +171,40 @@ image_data = nifti_image.get_fdata()
 
 size = nifti_image.shape
 
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button
 
 class MaskEditor:
-    def __init__(self, volume, mask,toggle):
+    def __init__(self, volume, mask, toggle):
         self.volume = volume
         self.mask = mask
         self.slice_idx = 0
 
         self.fig, self.ax = plt.subplots()
-        self.img = self.ax.imshow(self.volume[:,:,self.slice_idx], cmap='gray')
-        self.mask_overlay = self.ax.imshow(self.mask[:,:,self.slice_idx],clim=(0, 1), cmap='cool',alpha=0.5)
+        self.img = self.ax.imshow(self.volume[:, :, self.slice_idx], cmap='gray')
+        self.mask_overlay = self.ax.imshow(self.mask[:, :, self.slice_idx], clim=(0, 1), cmap='cool', alpha=0.5)
 
         self.ax.set_title(f'Slice {self.slice_idx}')
         self.fig.canvas.mpl_connect('scroll_event', self.on_scroll)
         if toggle:
             self.fig.canvas.mpl_connect('button_press_event', self.on_click)
 
+        self.confirm_ax = plt.axes([0.8, 0.01, 0.1, 0.05])
+        self.confirm_button = Button(self.confirm_ax, 'Si?')
+        self.confirm_button.on_clicked(self.confirm_output)
+
+        self.directions_ax = plt.axes([0.65, 0.01, 0.1, 0.05])
+        self.directions_button = Button(self.directions_ax, 'Directions')
+        self.toggle = toggle
+        self.directions_button.on_clicked(self.show_directions_toggle)
+
         plt.show()
 
     def update_display(self):
-        self.img.set_array(self.volume[:,:,self.slice_idx])
-        self.mask_overlay.set_array(self.mask[:,:,self.slice_idx])
+        self.img.set_array(self.volume[:, :, self.slice_idx])
+        self.mask_overlay.set_array(self.mask[:, :, self.slice_idx])
         self.ax.set_title(f'Slice {self.slice_idx}')
         self.fig.canvas.draw()
 
@@ -209,8 +219,30 @@ class MaskEditor:
         if event.inaxes != self.ax:
             return
         x1, x2 = int(event.xdata), int(event.ydata)
-        self.mask[x2,x1,self.slice_idx] = 1 - self.mask[x2,x1,self.slice_idx]  # Toggle mask value
+        self.mask[x2, x1, self.slice_idx] = 1 - self.mask[x2, x1, self.slice_idx]  # Toggle mask value
         self.update_display()
+
+    def confirm_output(self, event):
+        print("Mask confirmed!")
+        plt.close(self.fig)
+
+    def show_directions_toggle(self, event):
+        if self.toggle:
+            directions_text = (
+                "Use the scroll wheel to navigate slices and examine output mask.\n"
+                "Click on a mask point to toggle it.\n"
+                "Click 'Si?' to confirm."
+            )
+        else:
+            directions_text = (
+                "Use the scroll wheel to navigate slices and select segmentation layer.\n"
+                "Click 'Si?' to confirm."
+            )
+        fig, ax = plt.subplots(figsize=(5, 3))
+        ax.text(0.5, 0.5, directions_text, fontsize=12, ha='center', va='center', wrap=True)
+        ax.set_axis_off()
+        plt.show()
+
 
 skull_strip = False
 if skull_strip:
