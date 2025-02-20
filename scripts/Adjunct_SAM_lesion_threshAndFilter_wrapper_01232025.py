@@ -216,9 +216,12 @@ class MaskEditor:
         self.update_display()
 
     def on_click(self, event):
+        toolbar = plt.get_current_fig_manager().toolbar
+        if toolbar.mode:  # Ignore clicks when zoom or pan is active
+            return
         if event.inaxes != self.ax:
             return
-        x1, x2 = int(event.xdata), int(event.ydata)
+        x1, x2 = round(event.xdata), round(event.ydata)
         self.mask[x2, x1, self.slice_idx] = 1 - self.mask[x2, x1, self.slice_idx]  # Toggle mask value
         self.update_display()
 
@@ -261,6 +264,9 @@ if pickleIt:
 
     # Define a callback function for mouse clicks
     def on_click(event):
+        toolbar = plt.get_current_fig_manager().toolbar
+        if toolbar.mode:  # Ignore clicks when zoom or pan is active
+            return
         # Store the coordinates of the click
         if event.inaxes:
             coordinates.append((event.xdata, event.ydata))
@@ -480,7 +486,7 @@ with open('01_1059_20241226.pkl','rb') as f:
                 nifti_res[:,:,i] = out_mask[0]
     editor = MaskEditor(image_data, nifti_res, True)
     nifti_mask = nib.Nifti1Image(nifti_res, affine=nib.load(nifti_path).affine)
-nib.save(nifti_mask,'07_1096_NN.nii.gz')
+nib.save(nifti_mask,'output_SAMURAI.nii.gz')
 quit()
 
 def check_overlapping_entries(arr1, arr2):

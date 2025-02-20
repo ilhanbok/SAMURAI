@@ -43,10 +43,18 @@ There are two modes of operation: (i) Manual (GUI-based) selection and (ii) thre
 For DICOM files use a conversion tool such as [dcm2niix](https://github.com/rordenlab/dcm2niix) to create input NIFTI file.
 
 To use mode (i);
-- Run `python Adjunct_SAM_lesion_threshAndFilter_wrapper_01232025.py <nii file name>`
+- Run:
+`python Adjunct_SAM_lesion_threshAndFilter_wrapper_01232025.py ../niivue-images/chris_t1.nii.gz` or your nifti file of choice<br>
+<p align="center">
+<img src="logo/Samurai_Helmet_Icon-2.png" width="200" center>
 - Click on the points within the frame which you believe to be either intra-lesional (fg:1) or extra-lesional (bg:0).
-- Follow the commands given on-screen.
-- The segmented lesion will be saved to a `.nii.gz` file with the lesion ID as part of the name.
+- Enter the number of intra- and extra-lesional points. e.g. `4 2`
+- Segmentation will proceed automatically
+- The final mask will be displayed and can be edited as desired
+- The segmented landmark will be saved to `scripts/output_SAMURAI.nii.gz`
+
+Video tutorial:<br>
+https://www.youtube.com/watch?v=8VA3K332Exo
 
 To use mode (ii):
 - Usage: `python thresholdSAM_01062025.py NIFTI_PATH output_csv(.csv) mode(QSM or RAW) threshold(e.g.400) flip(lesions are dark?) blur(gaussian blur to hide artifacts?) skullstrip(strip skull or not?)`
