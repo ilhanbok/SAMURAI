@@ -49,6 +49,8 @@ To use mode (i);
 - Follow the commands given on-screen.
 - The segmented lesion will be saved to a `.nii.gz` file with the lesion ID as part of the name.
 
+Video tutorial:<br>
+https://www.youtube.com/watch?v=8VA3K332Exo
 To use mode (ii):
 - Usage: `python thresholdSAM_01062025.py NIFTI_PATH output_csv(.csv) mode(QSM or RAW) threshold(e.g.400) flip(lesions are dark?) blur(gaussian blur to hide artifacts?) skullstrip(strip skull or not?)`
 - There will be a loading bar and a GUI dictating whether you want to `accept` each lesion or not. If you decline, that lesion will be skipped and the program will iterate through all additional lesions
