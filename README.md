@@ -45,8 +45,6 @@ For DICOM files use a conversion tool such as [dcm2niix](https://github.com/rord
 To use mode (i);
 - Run:
 `python Adjunct_SAM_lesion_threshAndFilter_wrapper_01232025.py ../niivue-images/chris_t1.nii.gz` or your nifti file of choice<br>
-<p align="center">
-<img src="logo/Samurai_Helmet_Icon-2.png" width="200" center>
 - Click on the points within the frame which you believe to be either intra-lesional (fg:1) or extra-lesional (bg:0).
 - Enter the number of intra- and extra-lesional points. e.g. `4 2`
 - Segmentation will proceed automatically
