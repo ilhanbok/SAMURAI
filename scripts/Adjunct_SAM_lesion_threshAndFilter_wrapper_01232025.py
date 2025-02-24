@@ -175,20 +175,53 @@ size = nifti_image.shape
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button
+from matplotlib.widgets import Slider
 
 class MaskEditor:
-    def __init__(self, volume, mask, toggle):
+    def __init__(self, volume, mask, toggle, min=0, max=0):
         self.volume = volume
         self.mask = mask
         self.slice_idx = 0
+        self.toggle = toggle
 
         self.fig, self.ax = plt.subplots()
-        self.img = self.ax.imshow(self.volume[:, :, self.slice_idx], cmap='gray')
-        self.mask_overlay = self.ax.imshow(self.mask[:, :, self.slice_idx], clim=(0, 1), cmap='cool', alpha=0.5)
+        plt.subplots_adjust(left=0.1, bottom=0.3)  # Adjust layout for sliders
+        if min == 0 and max == 0:
+            self.min = np.min(self.volume[:,:,:])
+            self.max = np.max(self.volume[:,:,:])
+        else:
+            self.min = min
+            self.max = max
+
+        self.img = self.ax.imshow(self.volume[:, :, self.slice_idx], cmap='gray', vmin=self.min, vmax=self.max)
+        self.ax.set_title("Adjust Brightness Range")
+
+        def update_brightness(val):
+            """Update image brightness range based on slider values."""
+            vmin = slider_min.val
+            self.min=slider_min.val
+            vmax = slider_max.val
+            self.max=slider_max.val
+            self.img.set_clim(vmin, vmax)  # Adjust brightness range
+            self.fig.canvas.draw_idle()
+
+        # Create sliders
+        ax_min = plt.axes([0.1, 0.15, 0.35, 0.03])
+        ax_max = plt.axes([0.55, 0.15, 0.35, 0.03])
+
+        slider_min = Slider(ax_min, "Min Brightness", self.min, self.max, valinit=self.min)
+        slider_max = Slider(ax_max, "Max Brightness", self.min, self.max, valinit=self.max)
+
+        # Attach sliders to update function
+        slider_min.on_changed(update_brightness)
+        slider_max.on_changed(update_brightness)
+
+        if self.toggle:
+            self.mask_overlay = self.ax.imshow(self.mask[:, :, self.slice_idx], clim=(0, 1), cmap='cool', alpha=0.5)
 
         self.ax.set_title(f'Slice {self.slice_idx}')
         self.fig.canvas.mpl_connect('scroll_event', self.on_scroll)
-        if toggle:
+        if self.toggle:
             self.fig.canvas.mpl_connect('button_press_event', self.on_click)
 
         self.confirm_ax = plt.axes([0.8, 0.01, 0.1, 0.05])
@@ -197,14 +230,14 @@ class MaskEditor:
 
         self.directions_ax = plt.axes([0.65, 0.01, 0.1, 0.05])
         self.directions_button = Button(self.directions_ax, 'Directions')
-        self.toggle = toggle
         self.directions_button.on_clicked(self.show_directions_toggle)
 
         plt.show()
 
     def update_display(self):
         self.img.set_array(self.volume[:, :, self.slice_idx])
-        self.mask_overlay.set_array(self.mask[:, :, self.slice_idx])
+        if self.toggle:
+            self.mask_overlay.set_array(self.mask[:, :, self.slice_idx])
         self.ax.set_title(f'Slice {self.slice_idx}')
         self.fig.canvas.draw()
 
@@ -344,12 +377,15 @@ if pickleIt:
         while gusta == False:
             coordinates = []
             fig, ax=plt.subplots()
-            plt.imshow(Image.open(os.path.join(output_dir, frame_names[ann_frame_idx])),interpolation='none')
+            print(editor.min)
+            print(editor.max)
+            imshow_click = plt.imshow(image_data[:,:,editor.slice_idx],clim=(editor.min, editor.max),vmin=editor.min,vmax=editor.max,cmap='viridis')
+            imshow_click.set_clim(editor.min, editor.max)
             fig.canvas.mpl_connect('button_press_event', on_click)
             plt.show()
             g = input('Gusta? (Si/No)')
             confirmed = False
-            while confirmed == False:
+            while confirmed == False :
                 try:
                     if g == 'Si':
                         yn = input('Please enter fg (1) or bg (0) list: ')
@@ -363,6 +399,7 @@ if pickleIt:
                             confirmed = True
                         else:
                             g = 'Si'
+                        gusta = False
                 except:
                     print('Incorrect input')
                 finally:
@@ -403,7 +440,7 @@ if pickleIt:
             print(out_mask_logits[i][0].shape)
 
             ax.imshow(slice_2d, cmap="gray")
-            im = ax.imshow((out_mask_logits[i][0].cpu().numpy()), alpha=0.2, cmap="jet")#out_mask_logits[0][i].cpu().numpy()
+            im = ax.imshow((out_mask_logits[i][0].cpu().numpy()), alpha=0.2, cmap="viridis")#out_mask_logits[0][i].cpu().numpy()
             ax.set_title(f"Mask {i}")
             #ax[i].axis("off")
             fig.colorbar(im, ax=ax)
@@ -484,7 +521,7 @@ with open('01_1059_20241226.pkl','rb') as f:
                 nifti_res[:,i,:] = out_mask[0]
             if n == 2:
                 nifti_res[:,:,i] = out_mask[0]
-    editor = MaskEditor(image_data, nifti_res, True)
+    editor_fin = MaskEditor(image_data, nifti_res, True, editor.min, editor.max)
     nifti_mask = nib.Nifti1Image(nifti_res, affine=nib.load(nifti_path).affine)
 nib.save(nifti_mask,'output_SAMURAI.nii.gz')
 quit()
