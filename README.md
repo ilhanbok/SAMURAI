@@ -16,24 +16,15 @@ Adaptation of SAM2 for segmentation of brain hematomas.
 ## Installation
 
 ```bash
-git clone https://github.com/ilhanbok/SAMURAI.git
-cd SAMURAI
-git clone https://github.com/facebookresearch/sam2.git
-cd sam2
-git checkout 2b90b9f5ceec907a1c18123530e92e794ad901a4
-pip install -e .
-cp ../sam2_video_predictor.py .
-cd checkpoints
-./download_ckpts.sh
-cd ../..
-pip install -r requirements.txt
+git clone https://github.com/ilhanbok/SAMURAI.git && cd SAMURAI && ./install_SAMURAI.sh
 ```
+This should take about 5 minutes
+
 Example open-access nifti files are here:
 https://github.com/neurolabusc/niivue-images.git
 
 ```bash
-git clone https://github.com/neurolabusc/niivue-images.git
-cd scripts
+git clone https://github.com/neurolabusc/niivue-images.git && cd scripts
 ```
 
 ## Usage
@@ -41,6 +32,11 @@ cd scripts
 There are two modes of operation: (i) Manual (GUI-based) selection and (ii) threshold-based lesion identification.
 
 For DICOM files use a conversion tool such as [dcm2niix](https://github.com/rordenlab/dcm2niix) to create input NIFTI file.
+
+Before execution, ensure all pip and anaconda environments are deactivated.
+
+First run:
+`source ./venvs/venv_SAMURAI/bin/activate`
 
 To use mode (i);
 - Run:
