@@ -13,6 +13,24 @@ Adaptation of SAM2 for segmentation of brain hematomas.
 
 **NOTE:** This software is not intended for clinical use.
 
+## System requirements
+
+### Minimum requirements
+```
+16 GB RAM
+300 GB Disk Space
+10 Cores
+macOS or Windows 11
+```
+
+### Recommended requirements
+```
+36 GB RAM
+1 TB Disk Space
+14 Cores
+macOS
+```
+
 ## Installation
 
 ```bash
