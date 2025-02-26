@@ -7,6 +7,7 @@ from scipy.ndimage import rotate, shift
 from skimage.measure import regionprops, label
 import os
 import sys
+import platform
 
 if __name__ == '__main__':
     print('Usage: python Adjunct_SAM_lesion_threshAndFilter_wrapper_01232025.py NIFTI_PATH')
@@ -320,7 +321,13 @@ if pickleIt:
     for n in range(2,3):
         # Load the NIfTI file
         output_dir = "temp_jpeg_stack"
-        subprocess.run(['rm','-rf',output_dir])
+        if platform.system() == 'Windows':
+            #command = 'Test-Path {0} -PathType Container'.format(output_dir)
+            #print(command)
+            if subprocess.run(["powershell", "-Command", f"Test-Path '{output_dir}'"], capture_output=True, text=True):
+                subprocess.run(["powershell", "-Command", f"Remove-Item -Path '{output_dir}' -Recurse -Force"],capture_output=True, text=True)
+        else:
+            subprocess.run(['rm','-rf',output_dir])
         os.makedirs(output_dir, exist_ok=True)
 
         # Load the image

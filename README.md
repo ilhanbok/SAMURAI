@@ -13,18 +13,49 @@ Adaptation of SAM2 for segmentation of brain hematomas.
 
 **NOTE:** This software is not intended for clinical use.
 
+## System requirements
+
+### Minimum requirements
+```
+16 GB RAM
+300 GB Disk Space
+10 Cores
+macOS or Windows 11
+```
+
+### Recommended requirements
+```
+36 GB RAM
+1 TB Disk Space
+14 Cores
+macOS
+```
+
 ## Installation
 
+For macOS:
 ```bash
 git clone https://github.com/ilhanbok/SAMURAI.git && cd SAMURAI && ./install_SAMURAI.sh
 ```
+
+For Windows:<br><br>
+First install Anaconda: https://www.anaconda.com/download<br><br>
+Then run the following in Anaconda Powershell:
+```powershell
+git clone https://github.com/ilhanbok/SAMURAI.git
+cd SAMURAI
+./install_SAMURAI.ps1
+```
+
 This should take about 5 minutes
 
 Example open-access nifti files are here:
 https://github.com/neurolabusc/niivue-images.git
 
+For both:
 ```bash
-git clone https://github.com/neurolabusc/niivue-images.git && cd scripts
+git clone https://github.com/neurolabusc/niivue-images.git
+cd scripts
 ```
 
 ## Usage
@@ -36,7 +67,10 @@ For DICOM files use a conversion tool such as [dcm2niix](https://github.com/rord
 Before execution, ensure all pip and anaconda environments are deactivated.
 
 First run:
-`source ./venvs/venv_SAMURAI/bin/activate`
+(macOS)
+`source ./venvs/venv_SAMURAI/bin/activate`<br>
+Or (Windows 11)
+`conda activate venv_SAMURAI`
 
 To use mode (i);
 - Run:
