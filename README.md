@@ -8,11 +8,15 @@
 This repository provides easy access to a hematoma segmentation software wrapper for [Meta (Facebook Research) SAM 2](https://github.com/facebookresearch/sam2/tree/main). SAMURAI has been developed within the Department of Neurological Surgery at the University of Wisconsin - Madison School of Medicine and Public Health in conjunction with the Transforming Research and Clinical Knowledge in Traumatic Brain Injury (TRACK-TBI) consortium.
 
 Please cite the following if you are using SAMURAI:
-> *Machine learning-assisted segmentation of traumatic brain injury-induced hematomas: a TRACK-TBI study*, Neurotrauma 2025 (Philadelphia, PA)
+
+     Machine learning-assisted segmentation of traumatic brain
+     injury-induced hematomas: a TRACK-TBI study,
+     Neurotrauma 2025 (Philadelphia, PA)
 
 SAMURAI offers significant advantages compared to other methods of segmentation:
-- SAMURAI has been tested and validated using data from the TRACK-TBI consortium on multiple MRI images of traumatic hematomas including multiple susceptibilty-weighted (SWI, SWAN, GRE) sequences. SAMURAI is built upon Segment Anything Model 2 (SAM2) and may work with other MRI sequences as well (try it out!).
--
+- SAMURAI has been tested and validated using data from the TRACK-TBI consortium on multiple MRI images of traumatic hematomas including multiple susceptibilty-weighted (SWI, SWAN, GRE) sequences. SAMURAI is built upon [Segment Anything Model 2 (SAM2)](https://github.com/facebookresearch/sam2/tree/main) and may work with other MRI sequences as well (try it out!).
+- SAMURAI comes pre-trained and operates well with user input through an interactive guided user-friendly GUI and terminal prompt system.
+- SAMURAI works with MR images unlike [BLAST-CT](https://github.com/biomedia-mira/blast-ct/tree/master)
 
 **NOTE:** This software is not intended for clinical use.
 
@@ -42,9 +46,9 @@ git clone https://github.com/ilhanbok/SAMURAI.git && cd SAMURAI && ./install_SAM
 ```
 
 For Windows:<br><br>
-First install Anaconda: https://www.anaconda.com/download<br><br>
+First install Anaconda: https://www.anaconda.com/download<br>
 Then run the following in Anaconda Powershell:
-```powershell
+```bash
 git clone https://github.com/ilhanbok/SAMURAI.git
 cd SAMURAI
 ./install_SAMURAI.ps1
@@ -59,6 +63,11 @@ For both:
 ```bash
 git clone https://github.com/neurolabusc/niivue-images.git
 cd scripts
+```
+
+Optional: Install [HD-BET](https://github.com/MIC-DKFZ/HD-BET) for skull stripping
+```
+pip install hd-bet
 ```
 
 ## Usage
@@ -88,8 +97,10 @@ Video tutorial:<br>
 https://www.youtube.com/watch?v=8VA3K332Exo
 
 To use mode (ii):
-- Usage: `python thresholdSAM_01062025.py NIFTI_PATH output_csv(.csv) mode(QSM or RAW) threshold(e.g.400) flip(lesions are dark?) blur(gaussian blur to hide artifacts?) skullstrip(strip skull or not?)`
-- There will be a loading bar and a GUI dictating whether you want to `accept` each lesion or not. If you decline, that lesion will be skipped and the program will iterate through all additional lesions
+- Usage: `python thresholdSAM_01062025.py NIFTI_PATH output_csv(.csv) mode(QSM or RAW) threshold(e.g.400) flip(lesions are dark? [0/1]) blur(gaussian blur σ to hide artifacts? [0/1]) skullstrip(strip skull or not? [0/1])`
+- After iterating over possible lesions, you have the option to inspect and Accept (`Si`) each lesion or not.
+- As for mode (i), there will be a pop-up point selection window to add additional foreground / background points before a final confirmation dialog
+- Each lesion has a unique identification number which will be appended to its output NIFTI file. These files can be merged and viewed as a final .nii mask.
 
 ## About/Contact Information
 
