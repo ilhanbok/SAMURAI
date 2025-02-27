@@ -3,13 +3,16 @@
 <p align="center">
 <img src="logo/Samurai_Helmet_Icon-2.png" width="200" center>
 
-
 ## Introduction
 
-Our abstract:
-> *Machine Learning Segmentation of Magnetic Resonance Images for Radiomics of Traumatic Brain Injury Hematomata*, Neurotrauma 2025 (Philadelphia, PA)
+This repository provides easy access to a hematoma segmentation software wrapper for [Meta (Facebook Research) SAM 2](https://github.com/facebookresearch/sam2/tree/main). SAMURAI has been developed within the Department of Neurological Surgery at the University of Wisconsin - Madison School of Medicine and Public Health in conjunction with the Transforming Research and Clinical Knowledge in Traumatic Brain Injury (TRACK-TBI) consortium.
 
-Adaptation of SAM2 for segmentation of brain hematomas.
+Please cite the following if you are using SAMURAI:
+> *Machine learning-assisted segmentation of traumatic brain injury-induced hematomas: a TRACK-TBI study*, Neurotrauma 2025 (Philadelphia, PA)
+
+SAMURAI offers significant advantages compared to other methods of segmentation:
+- SAMURAI has been tested and validated using data from the TRACK-TBI consortium on multiple MRI images of traumatic hematomas including multiple susceptibilty-weighted (SWI, SWAN, GRE) sequences. SAMURAI is built upon Segment Anything Model 2 (SAM2) and may work with other MRI sequences as well (try it out!).
+-
 
 **NOTE:** This software is not intended for clinical use.
 
