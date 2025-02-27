@@ -39,30 +39,28 @@ if __name__ == '__main__':
             continue
         list_of_centroids.append([df.loc[i]['COMs_x'],df.loc[i]['COMs_y'],df.loc[i]['COMs_z'],df.loc[i]['volumes']])
         list_of_corresponding_indices.append(i-1)
-    print(list_of_centroids)
-    print(list_of_corresponding_indices)
     # Apply CSV
     ##SAM_segment.main(list_of_centroids,list_of_corresponding_indices) # centroid based
     list_of_centroids = []
     list_of_corresponding_indices = np.array([])
-    print(labeled_array)
     volumes = np.array([])
     for i in range(0,np.max(labeled_array)):
+        print('{0}/{1} Labels'.format(i,np.max(labeled_array)))
         matches = np.where(labeled_array == i)
         #if len(matches[0]) > 10:
         #    list_of_centroids = []
         #    list_of_corresponding_indices = np.array([])
         #    print(matches)
         for k in range(len(matches[0])):
-            print(k)
             list_of_centroids.append([matches[0][k],matches[1][k],matches[2][k]])
         #print(list_of_centroids)
         list_of_corresponding_indices = np.append(list_of_corresponding_indices,np.multiply(np.ones((len(matches[0]))),i))
         volumes = np.append(volumes,np.multiply(np.ones((len(matches[0]))),df.loc[i]['volumes']))#np.multiply(np.ones((df.loc[i]['volumes'])),i))
         if len(matches[0]) > 100:
-            print(list_of_centroids)
-            print(list_of_corresponding_indices)
-            print(volumes)
+            #print(list_of_centroids)
+            #print(list_of_corresponding_indices)
+            #print(volumes)
+            print('Large lesion.')
     list_of_centroids = np.array(list_of_centroids)
     #print(list_of_centroids)
     #print(list_of_corresponding_indices)

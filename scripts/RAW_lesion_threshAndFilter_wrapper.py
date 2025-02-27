@@ -2,7 +2,7 @@
 # feedback or peak splitting
 # Jan 2, 2025 | Ilhan Bok, Patrick Belton
 
-def main(nifti_path, output_csv = "RAW.csv", RAW_cutoff = 400, flip = False, sigma = 0, skull_strip = False):
+def main(nifti_path, output_csv = "RAW.csv", RAW_cutoff = 400, flip = 0, sigma = 0, skull_strip = 0):
     import numpy as np
     import nibabel as nib
     import sys
@@ -695,7 +695,6 @@ def main(nifti_path, output_csv = "RAW.csv", RAW_cutoff = 400, flip = False, sig
                     #     plt.show()
             x += 1
 
-    print(maxes)
     max_lesion_cont = np.zeros((len(video_segments)))
     prevmask = np.zeros((192,256))
     iprev = 0
