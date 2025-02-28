@@ -7,3 +7,5 @@ cd checkpoints
 ./download_ckpts.sh
 cd ../..
 pip install -r requirements.txt
+git clone https://github.com/neurolabusc/niivue-images.git
+cd scripts
