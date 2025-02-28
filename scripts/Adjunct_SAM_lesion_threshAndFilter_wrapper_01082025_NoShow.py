@@ -149,8 +149,6 @@ from sam2.sam2_image_predictor import SAM2ImagePredictor
 
 from scipy.ndimage import gaussian_filter, label, generate_binary_structure
 
-import SimpleITK as sitk
-
 from PIL import *
 import subprocess
 
@@ -455,38 +453,43 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
                 ###coordinates = np.array(coordinates, dtype=np.float32)
                 # for labels, `1` means positive click and `0` means negative click
                 if yn:
-                    labels = np.array(yn, np.int32)
+                    labels = np.array(np.append(np.ones((1,int(yn[0]))),np.zeros((1,int(yn[1])))), np.int32)
                 else:
                     continue
-
-                _, out_obj_ids, out_mask_logits = video_predictor.add_new_points_or_box(
-                    inference_state=inference_state,
-                    frame_idx=ann_frame_idx,
-                    obj_id=ann_obj_id,
-                    points=coordinates,
-                    labels=labels,
-                )
+                if not sum(labels) == 0:
+                    print(labels)
+                    print(coordinates)
+                    _, out_obj_ids, out_mask_logits = video_predictor.add_new_points_or_box(
+                        inference_state=inference_state,
+                        frame_idx=ann_frame_idx,
+                        obj_id=ann_obj_id,
+                        points=coordinates,
+                        labels=labels,
+                    )
+                else:
+                    labels = []
+                    print('No additional labels, continuing.')
 
             #quit()
             #print(slices)
             #quit()
             # 0.3 for mag images 02_1070
             # 0.05 01_1007 GRE
-            eta = 0.2 # sparsity index
+            eta = 0.1 # sparsity index
             slices_permuted = sparsify(slices, eta)
             eta_bg = 0.007
             # Create a mask to identify elements in arr1 that are also in arr2
 
-            fullslice = []
-            d = 5
-            for x in range(size[0]):#range(box[0],box[2]):#
-                for y in range(size[1]):#range(box[1],box[3]):#
-                    for z in range(size[2]):
-                        #if not [x,y] in slices[:,0:2].tolist():
-                        if not np.any(np.linalg.norm(slices - np.array([x,y,z]), axis=1) <= d):
-                            fullslice.append([x,y,z])
-            fullslice = np.array(fullslice)
-            bg_permuted = sparsify(fullslice, eta_bg)
+            # fullslice = []
+            # d = 5
+            # for x in range(size[0]):#range(box[0],box[2]):#
+            #     for y in range(size[1]):#range(box[1],box[3]):#
+            #         for z in range(size[2]):
+            #             #if not [x,y] in slices[:,0:2].tolist():
+            #             if not np.any(np.linalg.norm(slices - np.array([x,y,z]), axis=1) <= d):
+            #                 fullslice.append([x,y,z])
+            # fullslice = np.array(fullslice)
+            # bg_permuted = sparsify(fullslice, eta_bg)
             #coordinates = []
             #labels = [] #np.array(np.zeros((len(bg_permuted))), np.int32)
             #bg_permuted = []
@@ -497,6 +500,7 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
             num_centroids = len(slices_permuted)
             for j in range(num_centroids):
                 coordinates.append((slices_permuted[j][1],slices_permuted[j][0]))
+
                 labels = np.append(labels,1)
             points = np.array(coordinates, dtype=np.float32)
 
@@ -530,11 +534,14 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
 
                 print(out_mask_logits[0][i].shape)
 
-                ax[i].imshow(slice_2d, cmap="gray")
-                im = ax[i].imshow((out_mask_logits[0][i].cpu().numpy()), alpha=0.2, cmap="jet")#out_mask_logits[0][i].cpu().numpy()
-                ax[i].set_title(f"Mask {i}")
+                ax.imshow(slice_2d, cmap="gray")
+                im = ax.imshow((out_mask_logits[0][i].cpu().numpy()), alpha=0.2, cmap="jet")#out_mask_logits[0][i].cpu().numpy()
+                ax.set_title(f"Mask {i}")
+                # ax[i].imshow(slice_2d, cmap="gray")
+                # im = ax[i].imshow((out_mask_logits[0][i].cpu().numpy()), alpha=0.2, cmap="jet")#out_mask_logits[0][i].cpu().numpy()
+                # ax[i].set_title(f"Mask {i}")
                 #ax[i].axis("off")
-                fig.colorbar(im, ax=ax[i])
+                fig.colorbar(im, ax=ax)
 
             plt.show()
 

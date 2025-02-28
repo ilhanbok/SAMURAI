@@ -35,16 +35,19 @@ macOS
 
 For macOS:
 ```bash
-git clone https://github.com/ilhanbok/SAMURAI.git && cd SAMURAI && ./install_SAMURAI.sh
+python -m venv ./venvs/venv_SAMURAI/ && source ./venvs/venv_SAMURAI/bin/activate && git clone https://github.com/ilhanbok/SAMURAI.git && cd SAMURAI && ./install_SAMURAI.sh && cd scripts
 ```
 
 For Windows:<br><br>
 First install Anaconda: https://www.anaconda.com/download<br><br>
 Then run the following in Anaconda Powershell:
-```powershell
+```bash
+python -m venv ./venvs/venv_SAMURAI/
+source ./venvs/venv_SAMURAI/bin/activate
 git clone https://github.com/ilhanbok/SAMURAI.git
 cd SAMURAI
 ./install_SAMURAI.ps1
+cd scripts
 ```
 
 This should take about 5 minutes
@@ -87,8 +90,11 @@ https://www.youtube.com/watch?v=8VA3K332Exo
 Video tutorial:<br>
 https://www.youtube.com/watch?v=8VA3K332Exo
 To use mode (ii):
-- Usage: `python thresholdSAM_01062025.py NIFTI_PATH output_csv(.csv) mode(QSM or RAW) threshold(e.g.400) flip(lesions are dark?) blur(gaussian blur to hide artifacts?) skullstrip(strip skull or not?)`
-- There will be a loading bar and a GUI dictating whether you want to `accept` each lesion or not. If you decline, that lesion will be skipped and the program will iterate through all additional lesions
+- Usage: `python thresholdSAM_01062025.py NIFTI_PATH output_csv(.csv) mode(QSM or RAW) threshold(e.g.400) flip(lesions are dark? [0/1]) blur(gaussian blur σ to hide artifacts? [0/1]) skullstrip(strip skull or not? [0/1])`
+- For example: `python thresholdSAM_01062025.py ../niivue-images/chris_t1.nii.gz chris_t1 RAW 100 1 0 0`
+- After iterating over possible lesions, you have the option to inspect and Accept (`Si`) each lesion or not.
+- As for mode (i), there will be a pop-up point selection window to add additional foreground / background points before a final confirmation dialog
+- Each lesion has a unique identification number which will be appended to its output NIFTI file. These files can be merged and viewed as a final .nii mask.
 
 ## About/Contact Information
 
