@@ -3,20 +3,13 @@
 <p align="center">
 <img src="logo/Samurai_Helmet_Icon-2.png" width="200" center>
 
+
 ## Introduction
 
-This repository provides easy access to a hematoma segmentation software wrapper for [Meta (Facebook Research) SAM 2](https://github.com/facebookresearch/sam2/tree/main). SAMURAI has been developed within the Department of Neurological Surgery at the University of Wisconsin - Madison School of Medicine and Public Health in conjunction with the Transforming Research and Clinical Knowledge in Traumatic Brain Injury (TRACK-TBI) consortium.
+Our abstract:
+> *Machine Learning Segmentation of Magnetic Resonance Images for Radiomics of Traumatic Brain Injury Hematomata*, Neurotrauma 2025 (Philadelphia, PA)
 
-Please cite the following if you are using SAMURAI:
-
-     Machine learning-assisted segmentation of traumatic brain
-     injury-induced hematomas: a TRACK-TBI study,
-     Neurotrauma 2025 (Philadelphia, PA)
-
-SAMURAI offers significant advantages compared to other methods of segmentation:
-- SAMURAI has been tested and validated using data from the TRACK-TBI consortium on multiple MRI images of traumatic hematomas including multiple susceptibilty-weighted (SWI, SWAN, GRE) sequences. SAMURAI is built upon [Segment Anything Model 2 (SAM2)](https://github.com/facebookresearch/sam2/tree/main) and may work with other MRI sequences as well (try it out!).
-- SAMURAI comes pre-trained and operates well with user input through an interactive guided user-friendly GUI and terminal prompt system.
-- SAMURAI works with MR images unlike [BLAST-CT](https://github.com/biomedia-mira/blast-ct/tree/master)
+Adaptation of SAM2 for segmentation of brain hematomas.
 
 **NOTE:** This software is not intended for clinical use.
 
@@ -42,16 +35,19 @@ macOS
 
 For macOS:
 ```bash
-git clone https://github.com/ilhanbok/SAMURAI.git && cd SAMURAI && ./install_SAMURAI.sh
+python -m venv ./venvs/venv_SAMURAI/ && source ./venvs/venv_SAMURAI/bin/activate && git clone https://github.com/ilhanbok/SAMURAI.git && cd SAMURAI && ./install_SAMURAI.sh && cd scripts
 ```
 
 For Windows:<br><br>
-First install Anaconda: https://www.anaconda.com/download<br>
+First install Anaconda: https://www.anaconda.com/download<br><br>
 Then run the following in Anaconda Powershell:
 ```bash
+python -m venv ./venvs/venv_SAMURAI/
+source ./venvs/venv_SAMURAI/bin/activate
 git clone https://github.com/ilhanbok/SAMURAI.git
 cd SAMURAI
 ./install_SAMURAI.ps1
+cd scripts
 ```
 
 This should take about 5 minutes
@@ -65,11 +61,6 @@ git clone https://github.com/neurolabusc/niivue-images.git
 cd scripts
 ```
 
-Optional: Install [HD-BET](https://github.com/MIC-DKFZ/HD-BET) for skull stripping
-```
-pip install hd-bet
-```
-
 ## Usage
 
 There are two modes of operation: (i) Manual (GUI-based) selection and (ii) threshold-based lesion identification.
@@ -79,7 +70,10 @@ For DICOM files use a conversion tool such as [dcm2niix](https://github.com/rord
 Before execution, ensure all pip and anaconda environments are deactivated.
 
 First run:
-`source ../venvs/venv_SAMURAI/bin/activate`<br>
+(macOS)
+`source ./venvs/venv_SAMURAI/bin/activate`<br>
+Or (Windows 11)
+`conda activate venv_SAMURAI`
 
 To use mode (i);
 - Run:
