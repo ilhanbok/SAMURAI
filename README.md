@@ -79,10 +79,7 @@ For DICOM files use a conversion tool such as [dcm2niix](https://github.com/rord
 Before execution, ensure all pip and anaconda environments are deactivated.
 
 First run:
-(macOS)
-`source ./venvs/venv_SAMURAI/bin/activate`<br>
-Or (Windows 11)
-`conda activate venv_SAMURAI`
+`source ../venvs/venv_SAMURAI/bin/activate`<br>
 
 To use mode (i);
 - Run:
@@ -98,6 +95,7 @@ https://www.youtube.com/watch?v=8VA3K332Exo
 
 To use mode (ii):
 - Usage: `python thresholdSAM_01062025.py NIFTI_PATH output_csv(.csv) mode(QSM or RAW) threshold(e.g.400) flip(lesions are dark? [0/1]) blur(gaussian blur σ to hide artifacts? [0/1]) skullstrip(strip skull or not? [0/1])`
+- For example: `python thresholdSAM_01062025.py ../niivue-images/chris_t1.nii.gz chris_t1 RAW 100 1 0 0`
 - After iterating over possible lesions, you have the option to inspect and Accept (`Si`) each lesion or not.
 - As for mode (i), there will be a pop-up point selection window to add additional foreground / background points before a final confirmation dialog
 - Each lesion has a unique identification number which will be appended to its output NIFTI file. These files can be merged and viewed as a final .nii mask.
