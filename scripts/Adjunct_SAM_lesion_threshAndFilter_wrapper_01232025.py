@@ -368,6 +368,10 @@ class MultiViewMaskEditor:
         self.slider_min.on_changed(self.update_brightness)
         self.slider_max.on_changed(self.update_brightness)
 
+        self.directions_ax = plt.axes([0.65, 0.90, 0.1, 0.05])
+        self.directions_button = Button(self.directions_ax, 'Directions')
+        self.directions_button.on_clicked(self.show_directions_toggle)
+
         plt.show()
 
     def update_display(self):
@@ -403,7 +407,22 @@ class MultiViewMaskEditor:
             img.set_clim(vmin, vmax)
         self.fig.canvas.draw_idle()
 
-
+    def show_directions_toggle(self, event):
+        if self.toggle:
+            directions_text = (
+                "Use the scroll wheel to navigate slices and examine output mask.\n"
+                "Click on a mask point to toggle it.\n"
+                "Click 'Si?' to confirm."
+            )
+        else:
+            directions_text = (
+                "Use the scroll wheel to navigate slices and select segmentation layer.\n"
+                "Click 'Si?' to confirm."
+            )
+        fig, ax = plt.subplots(figsize=(5, 3))
+        ax.text(0.5, 0.5, directions_text, fontsize=12, ha='center', va='center', wrap=True)
+        ax.set_axis_off()
+        plt.show()
 
 
 
