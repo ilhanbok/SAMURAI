@@ -176,12 +176,17 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Button
 from matplotlib.widgets import Slider
 
+import time
+
+
+
 class MaskEditor:
-    def __init__(self, volume, mask, toggle, min=0, max=0):
+    def __init__(self, volume, mask, toggle, axis=0, min=0, max=0):
         self.volume = volume
         self.mask = mask
         self.slice_idx = 0
         self.toggle = toggle
+        self.axis = axis
 
         self.fig, self.ax = plt.subplots()
         plt.subplots_adjust(left=0.1, bottom=0.3)  # Adjust layout for sliders
@@ -191,8 +196,7 @@ class MaskEditor:
         else:
             self.min = min
             self.max = max
-
-        self.img = self.ax.imshow(self.volume[:, :, self.slice_idx], cmap='gray', vmin=self.min, vmax=self.max)
+        self.update_image()
         self.ax.set_title("Adjust Brightness Range")
 
         def update_brightness(val):
@@ -233,16 +237,41 @@ class MaskEditor:
 
         plt.show()
 
+    def update_image(self):
+        if self.axis == 0:
+            self.img = self.ax.imshow(self.volume[self.slice_idx, :, :], cmap='gray', vmin=self.min, vmax=self.max)
+        elif self.axis == 1:
+            self.img = self.ax.imshow(self.volume[:, self.slice_idx, :], cmap='gray', vmin=self.min, vmax=self.max)
+        elif self.axis == 2:
+            self.img = self.ax.imshow(self.volume[:, :, self.slice_idx], cmap='gray', vmin=self.min, vmax=self.max)
+
+    def get_mask_slice(self):
+        if self.axis == 0:
+            return self.mask[self.slice_idx, :, :]
+        elif self.axis == 1:
+            return self.mask[:, self.slice_idx, :]
+        elif self.axis == 2:
+            return self.mask[:, :, self.slice_idx]
+
     def update_display(self):
-        self.img.set_array(self.volume[:, :, self.slice_idx])
+        self.img.set_array(self.get_image_slice())
         if self.toggle:
-            self.mask_overlay.set_array(self.mask[:, :, self.slice_idx])
+            self.mask_overlay.set_array(self.get_mask_slice())
         self.ax.set_title(f'Slice {self.slice_idx}')
         self.fig.canvas.draw()
 
+    def get_image_slice(self):
+        if self.axis == 0:
+            return self.volume[self.slice_idx, :, :]
+        elif self.axis == 1:
+            return self.volume[:, self.slice_idx, :]
+        elif self.axis == 2:
+            return self.volume[:, :, self.slice_idx]
+
     def on_scroll(self, event):
+        max_idx = self.volume.shape[self.axis] - 1
         if event.step > 0:
-            self.slice_idx = min(self.slice_idx + 1, self.volume.shape[2] - 1)
+            self.slice_idx = min(self.slice_idx + 1, max_idx)
         else:
             self.slice_idx = max(self.slice_idx - 1, 0)
         self.update_display()
@@ -254,7 +283,12 @@ class MaskEditor:
         if event.inaxes != self.ax:
             return
         x1, x2 = round(event.xdata), round(event.ydata)
-        self.mask[x2, x1, self.slice_idx] = 1 - self.mask[x2, x1, self.slice_idx]  # Toggle mask value
+        if self.axis == 0:
+            self.mask[self.slice_idx, x2, x1] = 1 - self.mask[self.slice_idx, x2, x1]
+        elif self.axis == 1:
+            self.mask[x2, self.slice_idx, x1] = 1 - self.mask[x2, self.slice_idx, x1]
+        elif self.axis == 2:
+            self.mask[x2, x1, self.slice_idx] = 1 - self.mask[x2, x1, self.slice_idx]
         self.update_display()
 
     def confirm_output(self, event):
@@ -279,6 +313,102 @@ class MaskEditor:
         plt.show()
 
 
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.widgets import Button, Slider
+
+class MultiViewMaskEditor:
+    def __init__(self, volume, mask, toggle, min_val=0, max_val=0):
+        self.volume = volume
+        self.mask = mask
+        self.slices = [volume.shape[0] // 2, volume.shape[1] // 2, volume.shape[2] // 2]
+        self.toggle = toggle
+
+        if min_val == 0 and max_val == 0:
+            self.min_val = np.min(self.volume)
+            self.max_val = np.max(self.volume)
+        else:
+            self.min_val = min_val
+            self.max_val = max_val
+
+        self.fig, self.axes = plt.subplots(1, 3, figsize=(12, 4))
+        plt.subplots_adjust(left=0.1, bottom=0.3)  # Adjust layout for sliders
+        self.fig.canvas.mpl_connect('scroll_event', self.on_scroll)
+
+        self.imgs = [
+            self.axes[0].imshow(self.volume[self.slices[0], :, :], cmap='gray', vmin=self.min_val, vmax=self.max_val),
+            self.axes[1].imshow(self.volume[:, self.slices[1], :], cmap='gray', vmin=self.min_val, vmax=self.max_val),
+            self.axes[2].imshow(self.volume[:, :, self.slices[2]], cmap='gray', vmin=self.min_val, vmax=self.max_val)
+        ]
+
+        if self.toggle:
+            self.masks = [
+                self.axes[0].imshow(self.mask[self.slices[0], :, :], clim=(0, 1), cmap='cool', alpha=0.5),
+                self.axes[1].imshow(self.mask[:, self.slices[1], :], clim=(0, 1), cmap='cool', alpha=0.5),
+                self.axes[2].imshow(self.mask[:, :, self.slices[2]], clim=(0, 1), cmap='cool', alpha=0.5)
+            ]
+
+        self.buttons = []
+        for i, ax in enumerate(self.axes):
+            ax.set_title(f'Axis {i}')
+            button_ax = self.fig.add_axes([0.1 + 0.3 * i, 0.01, 0.1, 0.05])
+            button = Button(button_ax, 'Si')
+            button.on_clicked(lambda event, idx=i: self.confirm_selection(idx))
+            self.buttons.append(button)
+
+        # Brightness sliders
+        ax_min = plt.axes([0.1, 0.15, 0.35, 0.03])
+        ax_max = plt.axes([0.55, 0.15, 0.35, 0.03])
+
+        self.slider_min = Slider(ax_min, "Min Brightness", self.min_val, self.max_val, valinit=self.min_val)
+        self.slider_max = Slider(ax_max, "Max Brightness", self.min_val, self.max_val, valinit=self.max_val)
+
+        self.slider_min.on_changed(self.update_brightness)
+        self.slider_max.on_changed(self.update_brightness)
+
+        plt.show()
+
+    def update_display(self):
+        self.imgs[0].set_array(self.volume[self.slices[0], :, :])
+        self.imgs[1].set_array(self.volume[:, self.slices[1], :])
+        self.imgs[2].set_array(self.volume[:, :, self.slices[2]])
+        for i, ax in enumerate(self.axes):
+            ax.set_title(f'Axis {i} - Slice {self.slices[i]}')
+        self.fig.canvas.draw()
+
+    def on_scroll(self, event):
+        for i, ax in enumerate(self.axes):
+            if event.inaxes == ax:
+                if event.step > 0:
+                    self.slices[i] = min(self.slices[i] + 1, self.volume.shape[i] - 1)
+                else:
+                    self.slices[i] = max(self.slices[i] - 1, 0)
+                self.update_display()
+                break
+
+    def confirm_selection(self, axis):
+        print(f'Confirmed selection for axis {axis}')
+        plt.close(self.fig)
+        self.axis = axis
+        return axis
+
+    def update_brightness(self, val):
+        vmin = self.slider_min.val
+        self.min_val = self.slider_min.val
+        vmax = self.slider_max.val
+        self.max_val = self.slider_max.val
+        for img in self.imgs:
+            img.set_clim(vmin, vmax)
+        self.fig.canvas.draw_idle()
+
+
+
+
+
+
+
 skull_strip = False
 if skull_strip:
     output_path = "./temp_sks.nii.gz"
@@ -292,6 +422,8 @@ if skull_strip:
 import matplotlib.pyplot as plt
 
 pickleIt = True
+
+times_taken = np.array([])
 if pickleIt:
 
     # Define a callback function for mouse clicks
@@ -307,8 +439,16 @@ if pickleIt:
             # Optionally, plot the point where clicked
             plt.plot(event.xdata, event.ydata, 'ro')
             plt.draw()
-    editor = MaskEditor(image_data,np.zeros(image_data.shape),False)
-    slices=[0,0,editor.slice_idx]
+    start_time = time.time()
+    editor = MultiViewMaskEditor(image_data,np.zeros(image_data.shape),False)
+
+    n = editor.axis
+    if editor.axis == 0:
+        slices=[editor.slices[editor.axis],0,0]
+    if editor.axis == 1:
+        slices=[0,editor.slices[editor.axis],0]
+    if editor.axis == 2:
+        slices=[0,0,editor.slices[editor.axis]]
     #slices = [45,80,115] #(0,1,2)
     # [58,82,153] #07_1073 (QSM)
     # [59,51,129] #05_1059 (QSM)
@@ -316,192 +456,206 @@ if pickleIt:
     # [64,127,185] #01_1007 (MP_RAGE)
     # [47,144,110] #01_1011 (GRE)
     # [79,124,197] #05_1003 (MP_RAGE)
-    for n in range(2,3):
-        # Load the NIfTI file
-        output_dir = "temp_jpeg_stack"
-        if platform.system() == 'Windows':
-            #command = 'Test-Path {0} -PathType Container'.format(output_dir)
-            #print(command)
-            if subprocess.run(["powershell", "-Command", f"Test-Path '{output_dir}'"], capture_output=True, text=True):
-                subprocess.run(["powershell", "-Command", f"Remove-Item -Path '{output_dir}' -Recurse -Force"],capture_output=True, text=True)
-        else:
-            subprocess.run(['rm','-rf',output_dir])
-        os.makedirs(output_dir, exist_ok=True)
+    # Load the NIfTI file
+    output_dir = "temp_jpeg_stack"
+    if platform.system() == 'Windows':
+        #command = 'Test-Path {0} -PathType Container'.format(output_dir)
+        #print(command)
+        if subprocess.run(["powershell", "-Command", f"Test-Path '{output_dir}'"], capture_output=True, text=True):
+            subprocess.run(["powershell", "-Command", f"Remove-Item -Path '{output_dir}' -Recurse -Force"],capture_output=True, text=True)
+    else:
+        subprocess.run(['rm','-rf',output_dir])
+    os.makedirs(output_dir, exist_ok=True)
 
-        # Load the image
-        img = nib.load(nifti_path)
-        data = image_data
-        # Normalize data to 0-255 for saving as JPEG
-        data = (data - np.min(data)) / (np.max(data) - np.min(data)) * 255
-        data = data.astype(np.uint8)
-        frame_names = []
-        # Iterate through slices and save as JPEG
-        for i in range(data.shape[n]):  # Assuming 3D data
-            if n == 0:
-                slice_data = data[i, :, :]
-            if n == 1:
-                slice_data = data[:, i, :]
-            if n == 2:
-                slice_data = data[:, :, i]
-
-            # Restore orientation
-            slice_data = (slice_data)
-
-            img = Image.fromarray(slice_data)
-            img.save(os.path.join(output_dir, f"{i:04d}.jpg"))
-            frame_names.append(f"{i:04d}.jpg")
-
-        print(f"JPEG stack saved to {output_dir}")
-
-        sam2_model = build_sam2(model_cfg, sam2_checkpoint, device=device)
-        video_predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint, device=device)
-        inference_state = video_predictor.init_state(video_path=output_dir)
-
-        ann_frame_idx = slices[n]-1 # subtract 1 in order to match ITK-SNAP indices
-        ann_obj_id = 1  # give a unique id to each object we interact with (it can be any integers)
-        # List to store coordinates'
-
-
-        havearray = input('Did you preload an array of points? (Si/No)')
-        #frame_names = np.array(list(range(data.shape[2]))).astype(str)
-        if havearray == 'Si':
-            coordinates = []
-            first = True
-            with open('preload_07_1096') as f:
-                for line in f:
-                    fl = line.split(',')
-                    fl = [s.strip() for s in fl]
-                    if first:
-                        yn = [fl[0],fl[1]]
-                        first = False
-                    else:
-                        coordinates.append((fl[0],fl[1]))
-            gusta = True
-        else:
-            gusta = False
-        while gusta == False:
-            coordinates = []
-            fig, ax=plt.subplots()
-            print(editor.min)
-            print(editor.max)
-            imshow_click = plt.imshow(image_data[:,:,editor.slice_idx],clim=(editor.min, editor.max),vmin=editor.min,vmax=editor.max,cmap='viridis')
-            imshow_click.set_clim(editor.min, editor.max)
-            fig.canvas.mpl_connect('button_press_event', on_click)
-            plt.show()
-            g = input('Gusta? (Si/No)')
-            confirmed = False
-            while confirmed == False :
-                try:
-                    if g == 'Si':
-                        yn = input('Please enter fg (1) or bg (0) list: ')
-                        yn = yn.split(' ')
-                        print(yn)
-                        gusta = True
-                        confirmed = True
-                    else:
-                        h = input('Are you sure you want to discard? (Si/No)')
-                        if h == 'Si':
-                            confirmed = True
-                        else:
-                            g = 'Si'
-                        gusta = False
-                except:
-                    print('Incorrect input')
-                finally:
-                    pass
-
-        # Let's add a positive click at (x, y)
-        points = np.array(coordinates, dtype=np.float32)
-        # for labels, `1` means positive click and `0` means negative click
-        labels = np.array(np.append(np.ones((1,int(yn[0]))),np.zeros((1,int(yn[1])))), np.int32)
-
-        scores, out_obj_ids, out_mask_logits = video_predictor.add_new_points_or_box(
-            inference_state=inference_state,
-            frame_idx=ann_frame_idx,
-            obj_id=ann_obj_id,
-            points=points,
-            labels=labels
-        )
-
-        masks = out_mask_logits
+    # Load the image
+    img = nib.load(nifti_path)
+    data = image_data
+    # Normalize data to 0-255 for saving as JPEG
+    data = (data - np.min(data)) / (np.max(data) - np.min(data)) * 255
+    data = data.astype(np.uint8)
+    frame_names = []
+    # Iterate through slices and save as JPEG
+    for i in range(data.shape[n]):  # Assuming 3D data
         if n == 0:
-            slice_2d = image_data[slices[n],:,:]
+            slice_data = data[i, :, :]
         if n == 1:
-            slice_2d = image_data[:,slices[n],:]
+            slice_data = data[:, i, :]
         if n == 2:
-            slice_2d = image_data[:,:,slices[n]]
-                    # Display the results
-        fig, ax = plt.subplots(1, len(out_mask_logits), figsize=(20, 10))
-        for i in range(len(out_mask_logits)):
+            slice_data = data[:, :, i]
+
+        # Restore orientation
+        slice_data = (slice_data)
+
+        img = Image.fromarray(slice_data)
+        img.save(os.path.join(output_dir, f"{i:04d}.jpg"))
+        frame_names.append(f"{i:04d}.jpg")
+
+    print(f"JPEG stack saved to {output_dir}")
+    times_taken = np.append(times_taken, time.time() - start_time)
+
+    sam2_model = build_sam2(model_cfg, sam2_checkpoint, device=device)
+    video_predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint, device=device)
+    inference_state = video_predictor.init_state(video_path=output_dir)
+
+    ann_frame_idx = slices[n]-1 # subtract 1 in order to match ITK-SNAP indices
+    ann_obj_id = 1  # give a unique id to each object we interact with (it can be any integers)
+    # List to store coordinates'
 
 
-            # Calculate gradient
-            #gradient_x, gradient_y = np.gradient(out_mask_logits[i].cpu())
-
-            # Calculate magnitude
-            #magnitude = np.sqrt(gradient_x**2 + gradient_y**2)
-
-
-            print(out_mask_logits[i][0].shape)
-
-            ax.imshow(slice_2d, cmap="gray")
-            im = ax.imshow((out_mask_logits[i][0].cpu().numpy()), alpha=0.2, cmap="viridis")#out_mask_logits[0][i].cpu().numpy()
-            ax.set_title(f"Mask {i}")
-            #ax[i].axis("off")
-            fig.colorbar(im, ax=ax)
-
-        plt.show()
-
-
-        # fig, ax = plt.subplots(1, len(out_mask_logits[0]), figsize=(20, 10))
-        # for i in range(len(out_mask_logits[0])):
-        #
-        #     # Calculate gradient
-        #     gradient_x, gradient_y = np.gradient(out_mask_logits[0][i].cpu())
-        #
-        #     # Calculate magnitude
-        #     magnitude = np.sqrt(gradient_x**2 + gradient_y**2)
-        #
-        #     plt.figure(figsize=(9, 6))
-        #     plt.title(f"frame {ann_frame_idx}")
-        #     plt.imshow(Image.open(os.path.join(output_dir, frame_names[ann_frame_idx])))
-        #     show_points(points, labels, plt.gca())
-        #     show_mask((out_mask_logits[0][i].cpu().numpy()), plt.gca(), obj_id=out_obj_ids[0])
-        #
-        # plt.show()
-
-
-
+    havearray = input('Did you preload an array of points? (Si/No)')
+    #frame_names = np.array(list(range(data.shape[2]))).astype(str)
+    if havearray == 'Si':
+        coordinates = []
+        first = True
+        with open('/Users/bok/Library/CloudStorage/Box-Box/Belton_Lab_Ilhan/QSM_Pipeline_Belton_Lab/qsm-proc-main/preload_07_1064') as f:
+            for line in f:
+                fl = line.split(',')
+                fl = [s.strip() for s in fl]
+                if first:
+                    yn = [fl[0],fl[1]]
+                    first = False
+                else:
+                    coordinates.append((fl[0],fl[1]))
+        gusta = True
+        times_taken = np.append(times_taken,'0 (preload)')
+    else:
+        start_time = time.time()
         gusta = False
+    while gusta == False:
+        coordinates = []
+        fig, ax=plt.subplots()
+        print(editor.min_val)
+        print(editor.max_val)
+        if n == 0:
+            slice_data = data[editor.slices[0], :, :]
+        if n == 1:
+            slice_data = data[:, editor.slices[1], :]
+        if n == 2:
+            slice_data = data[:, :, editor.slices[2]]
+        imshow_click = plt.imshow(slice_data,clim=(editor.min_val, editor.max_val),vmin=editor.min_val,vmax=editor.max_val,cmap='viridis')
+        imshow_click.set_clim(editor.min_val, editor.max_val)
+        fig.canvas.mpl_connect('button_press_event', on_click)
+        plt.show()
         g = input('Gusta? (Si/No)')
         confirmed = False
-        while confirmed == False:
-            if g == 'Si':
-                gusta = True
-                confirmed = True
-            else:
-                h = input('Are you sure you want to discard? (Si/No)')
-                if h == 'Si':
+        while confirmed == False :
+            try:
+                if g == 'Si':
+                    yn = input('Please enter fg (1) or bg (0) list: ')
+                    yn = yn.split(' ')
+                    print(yn)
+                    gusta = True
                     confirmed = True
+                else:
+                    h = input('Are you sure you want to discard? (Si/No)')
+                    if h == 'Si':
+                        confirmed = True
+                    else:
+                        g = 'Si'
+                    gusta = False
+            except:
+                print('Incorrect input')
+            finally:
+                pass
 
-        # Now do the whole video
-        # run propagation throughout the video and collect the results in a dict
-        video_segments = {}  # video_segments contains the per-frame segmentation results
-        for out_frame_idx, out_obj_ids, out_mask_logits in video_predictor.propagate_in_video(inference_state):
-            print(out_frame_idx)
-            video_segments[out_frame_idx] = {
-                out_obj_id: (out_mask_logits[i] > 0.0).cpu().numpy()
-                for i, out_obj_id in enumerate(out_obj_ids)
-            }
+    times_taken = np.append(times_taken, time.time() - start_time)
 
-        # Beta: now run the other way to fill the whole image
-        # reverse video
+    # Let's add a positive click at (x, y)
+    points = np.array(coordinates, dtype=np.float32)
+    # for labels, `1` means positive click and `0` means negative click
+    labels = np.array(np.append(np.ones((1,int(yn[0]))),np.zeros((1,int(yn[1])))), np.int32)
 
-        for out_frame_idx, out_obj_ids, out_mask_logits in video_predictor.propagate_in_video(inference_state,reverse=True):
-            video_segments[out_frame_idx] = {
-                out_obj_id: (out_mask_logits[i] > 0.0).cpu().numpy()
-                for i, out_obj_id in enumerate(out_obj_ids)
-            }
+    start_time = time.time()
+    scores, out_obj_ids, out_mask_logits = video_predictor.add_new_points_or_box(
+        inference_state=inference_state,
+        frame_idx=ann_frame_idx,
+        obj_id=ann_obj_id,
+        points=points,
+        labels=labels
+    )
+
+    masks = out_mask_logits
+    if n == 0:
+        slice_2d = image_data[slices[n],:,:]
+    if n == 1:
+        slice_2d = image_data[:,slices[n],:]
+    if n == 2:
+        slice_2d = image_data[:,:,slices[n]]
+                # Display the results
+    fig, ax = plt.subplots(1, len(out_mask_logits), figsize=(20, 10))
+    for i in range(len(out_mask_logits)):
+
+
+        # Calculate gradient
+        #gradient_x, gradient_y = np.gradient(out_mask_logits[i].cpu())
+
+        # Calculate magnitude
+        #magnitude = np.sqrt(gradient_x**2 + gradient_y**2)
+
+
+        print(out_mask_logits[i][0].shape)
+
+        ax.imshow(slice_2d, cmap="gray")
+        im = ax.imshow((out_mask_logits[i][0].cpu().numpy()), alpha=0.2, cmap="viridis")#out_mask_logits[0][i].cpu().numpy()
+        ax.set_title(f"Mask {i}")
+        #ax[i].axis("off")
+        fig.colorbar(im, ax=ax)
+    times_taken = np.append(times_taken, time.time() - start_time)
+    plt.show()
+
+
+    # fig, ax = plt.subplots(1, len(out_mask_logits[0]), figsize=(20, 10))
+    # for i in range(len(out_mask_logits[0])):
+    #
+    #     # Calculate gradient
+    #     gradient_x, gradient_y = np.gradient(out_mask_logits[0][i].cpu())
+    #
+    #     # Calculate magnitude
+    #     magnitude = np.sqrt(gradient_x**2 + gradient_y**2)
+    #
+    #     plt.figure(figsize=(9, 6))
+    #     plt.title(f"frame {ann_frame_idx}")
+    #     plt.imshow(Image.open(os.path.join(output_dir, frame_names[ann_frame_idx])))
+    #     show_points(points, labels, plt.gca())
+    #     show_mask((out_mask_logits[0][i].cpu().numpy()), plt.gca(), obj_id=out_obj_ids[0])
+    #
+    # plt.show()
+
+
+
+    gusta = False
+    g = input('Gusta? (Si/No)')
+    confirmed = False
+    while confirmed == False:
+        if g == 'Si':
+            gusta = True
+            confirmed = True
+        else:
+            h = input('Are you sure you want to discard? (Si/No)')
+            if h == 'Si':
+                confirmed = True
+
+    start_time = time.time()
+    # Now do the whole video
+    # run propagation throughout the video and collect the results in a dict
+    video_segments = {}  # video_segments contains the per-frame segmentation results
+    for out_frame_idx, out_obj_ids, out_mask_logits in video_predictor.propagate_in_video(inference_state):
+        print(out_frame_idx)
+        video_segments[out_frame_idx] = {
+            out_obj_id: (out_mask_logits[i] > 2.0).cpu().numpy()
+            for i, out_obj_id in enumerate(out_obj_ids)
+        }
+
+    # Beta: now run the other way to fill the whole image
+    # reverse video
+
+    for out_frame_idx, out_obj_ids, out_mask_logits in video_predictor.propagate_in_video(inference_state,reverse=True):
+        video_segments[out_frame_idx] = {
+            out_obj_id: (out_mask_logits[i] > 2.0).cpu().numpy()
+            for i, out_obj_id in enumerate(out_obj_ids)
+        }
+
+    times_taken = np.append(times_taken, time.time() - start_time)
 
     def rot270(img):
         return np.rot90(np.rot90(np.rot90(img)))
@@ -509,7 +663,6 @@ if pickleIt:
     with open('01_1059_20241226.pkl','wb') as f:
         pickle.dump(video_segments, f)
 else:
-    n = 2
     data = image_data
     with open('01_1059_20241226.pkl','rb') as f:
         video_segments = pickle.load(f)
@@ -526,9 +679,14 @@ with open('01_1059_20241226.pkl','rb') as f:
                 nifti_res[:,i,:] = out_mask[0]
             if n == 2:
                 nifti_res[:,:,i] = out_mask[0]
-    editor_fin = MaskEditor(image_data, nifti_res, True, editor.min, editor.max)
+    start_time = time.time()
+    editor_fin = MaskEditor(image_data, nifti_res, True, editor.axis, editor.min_val, editor.max_val)
     nifti_mask = nib.Nifti1Image(nifti_res, affine=nib.load(nifti_path).affine)
 nib.save(nifti_mask,'output_SAMURAI.nii.gz')
+times_taken = np.append(times_taken, time.time() - start_time)
+print('Slice selection time: {0}\nPoint selection time: {1}\nMask confirmation time: {2}\nMask propagation time: {3}\nOutput validation time: {4}\n(in seconds)'.format(times_taken[0],times_taken[1],times_taken[2],times_taken[3],times_taken[4]))
+with open('times_SAMURAI.txt','w') as wt:
+    wt.write('Slice selection time: {0}\nPoint selection time: {1}\nMask confirmation time: {2}\nMask propagation time: {3}\nOutput validation time: {4}\n (in seconds)'.format(times_taken[0],times_taken[1],times_taken[2],times_taken[3],times_taken[4]))
 quit()
 
 def check_overlapping_entries(arr1, arr2):
@@ -1089,11 +1247,11 @@ if pickleIt:
         # Iterate through slices and save as JPEG
         for i in range(data.shape[n]):  # Assuming 3D data
             if n == 0:
-                slice_data = data[i, :, :]
+                slice_data = image_data[i, :, :]
             if n == 1:
-                slice_data = data[:, i, :]
+                slice_data = image_data[:, i, :]
             if n == 2:
-                slice_data = data[:, :, i]
+                slice_data = image_data[:, :, i]
 
             # Restore orientation
             slice_data = (slice_data)
@@ -1118,7 +1276,7 @@ if pickleIt:
         if havearray == 'Si':
             coordinates = []
             first = True
-            with open('preload_07_1096') as f:
+            with open('preload_07_1064') as f:
                 for line in f:
                     fl = line.split(',')
                     fl = [s.strip() for s in fl]
@@ -1237,7 +1395,7 @@ if pickleIt:
         for out_frame_idx, out_obj_ids, out_mask_logits in video_predictor.propagate_in_video(inference_state):
             print(out_frame_idx)
             video_segments[out_frame_idx] = {
-                out_obj_id: (out_mask_logits[i] > 0.0).cpu().numpy()
+                out_obj_id: (out_mask_logits[i] > 2.0).cpu().numpy()
                 for i, out_obj_id in enumerate(out_obj_ids)
             }
 
@@ -1246,7 +1404,7 @@ if pickleIt:
 
         for out_frame_idx, out_obj_ids, out_mask_logits in video_predictor.propagate_in_video(inference_state,reverse=True):
             video_segments[out_frame_idx] = {
-                out_obj_id: (out_mask_logits[i] > 0.0).cpu().numpy()
+                out_obj_id: (out_mask_logits[i] > 2.0).cpu().numpy()
                 for i, out_obj_id in enumerate(out_obj_ids)
             }
 
