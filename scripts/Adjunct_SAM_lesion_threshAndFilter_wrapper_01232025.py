@@ -166,7 +166,8 @@ model_cfg = "configs/sam2.1/sam2.1_hiera_l.yaml"
 
 # Load NIfTI image
 nifti_image = nib.load(nifti_path)
-image_data = nifti_image.get_fdata()
+image_data = np.transpose(nifti_image.get_fdata())
+image_data = np.flip(image_data,0)
 
 size = nifti_image.shape
 
@@ -305,7 +306,7 @@ class MaskEditor:
         else:
             directions_text = (
                 "Use the scroll wheel to navigate slices and select segmentation layer.\n"
-                "Click 'Si?' to confirm."
+                "Click 'Si?' on the corresponding view (axial, coronal, or sagittal) to confirm."
             )
         fig, ax = plt.subplots(figsize=(5, 3))
         ax.text(0.5, 0.5, directions_text, fontsize=12, ha='center', va='center', wrap=True)
@@ -325,6 +326,7 @@ class MultiViewMaskEditor:
         self.mask = mask
         self.slices = [volume.shape[0] // 2, volume.shape[1] // 2, volume.shape[2] // 2]
         self.toggle = toggle
+        self.orientations = ['Axial','Coronal','Sagittal']
 
         if min_val == 0 and max_val == 0:
             self.min_val = np.min(self.volume)
@@ -352,7 +354,7 @@ class MultiViewMaskEditor:
 
         self.buttons = []
         for i, ax in enumerate(self.axes):
-            ax.set_title(f'Axis {i}')
+            ax.set_title(f'{self.orientations[i]} Axis ({i})')
             button_ax = self.fig.add_axes([0.1 + 0.3 * i, 0.01, 0.1, 0.05])
             button = Button(button_ax, 'Si')
             button.on_clicked(lambda event, idx=i: self.confirm_selection(idx))
@@ -368,7 +370,7 @@ class MultiViewMaskEditor:
         self.slider_min.on_changed(self.update_brightness)
         self.slider_max.on_changed(self.update_brightness)
 
-        self.directions_ax = plt.axes([0.65, 0.90, 0.1, 0.05])
+        self.directions_ax = plt.axes([0.9, 0.02, 0.1, 0.05])
         self.directions_button = Button(self.directions_ax, 'Directions')
         self.directions_button.on_clicked(self.show_directions_toggle)
 
@@ -379,7 +381,7 @@ class MultiViewMaskEditor:
         self.imgs[1].set_array(self.volume[:, self.slices[1], :])
         self.imgs[2].set_array(self.volume[:, :, self.slices[2]])
         for i, ax in enumerate(self.axes):
-            ax.set_title(f'Axis {i} - Slice {self.slices[i]}')
+            ax.set_title(f'{self.orientations[i]} Axis ({i}) - Slice {self.slices[i]}')
         self.fig.canvas.draw()
 
     def on_scroll(self, event):
@@ -417,7 +419,7 @@ class MultiViewMaskEditor:
         else:
             directions_text = (
                 "Use the scroll wheel to navigate slices and select segmentation layer.\n"
-                "Click 'Si?' to confirm."
+                "Click 'Si?' on the corresponding view (axial, coronal, or sagittal) to confirm."
             )
         fig, ax = plt.subplots(figsize=(5, 3))
         ax.text(0.5, 0.5, directions_text, fontsize=12, ha='center', va='center', wrap=True)
@@ -687,7 +689,7 @@ else:
         video_segments = pickle.load(f)
 
 with open('01_1059_20241226.pkl','rb') as f:
-    nifti_res = np.zeros(size)
+    nifti_res = np.zeros(image_data.shape)
     video_segments = pickle.load(f)
     print(list(video_segments.keys()))
     for i in range(np.min(list(video_segments.keys())),np.max(list(video_segments.keys()))+1):
@@ -699,7 +701,12 @@ with open('01_1059_20241226.pkl','rb') as f:
             if n == 2:
                 nifti_res[:,:,i] = out_mask[0]
     start_time = time.time()
+
     editor_fin = MaskEditor(image_data, nifti_res, True, editor.axis, editor.min_val, editor.max_val)
+
+    nifti_res = np.flip(nifti_res,0)
+    nifti_res = np.transpose(nifti_res)
+
     nifti_mask = nib.Nifti1Image(nifti_res, affine=nib.load(nifti_path).affine)
 nib.save(nifti_mask,'output_SAMURAI.nii.gz')
 times_taken = np.append(times_taken, time.time() - start_time)
