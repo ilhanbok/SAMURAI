@@ -256,7 +256,7 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
 
     pickleIt = True
     # Load the NIfTI file
-    makeDir = False
+    makeDir = True
 
     output_dir = "temp_jpeg_stack"
     if makeDir:
