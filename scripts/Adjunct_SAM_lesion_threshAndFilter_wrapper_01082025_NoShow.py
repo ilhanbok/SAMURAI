@@ -217,8 +217,7 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
 
     print(f"using device: {device}")
 
-
-    sam2_checkpoint = "/Users/bok/Library/CloudStorage/Box-Box/Belton_Lab_Ilhan/QSM_Pipeline_Belton_Lab/qsm-proc-main/sam2.1_hiera_large.pt"
+    sam2_checkpoint = "../sam2/checkpoints/sam2.1_hiera_large.pt"
     model_cfg = "configs/sam2.1/sam2.1_hiera_l.yaml"
 
     # Load the NIfTI file
@@ -257,9 +256,9 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
 
     pickleIt = True
     # Load the NIfTI file
-    makeDir = True
+    makeDir = False
 
-    output_dir = "01_1011_001"
+    output_dir = "temp_jpeg_stack"
     if makeDir:
         subprocess.run(['rm','-rf',output_dir])
         os.makedirs(output_dir, exist_ok=True)
@@ -348,11 +347,12 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
     curr_e = 0
     unique_loop = pd.unique(list_of_corresponding_indices)
     unique_vols = pd.unique(volumes)
-
+    isLesion = True
     while curr_e < len(unique_loop):
         print('lesion ID: {0}'.format(curr_e))
         e = unique_loop[curr_e]
-        inference_state = video_predictor.init_state(video_path=output_dir)
+        if isLesion:
+            inference_state = video_predictor.init_state(video_path=output_dir)
         if pickleIt:
             #print(e)
             #print(list_of_corresponding_indices)
@@ -418,9 +418,11 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
             passCurr = False
             if (g == 'Si') or (g == ''):
                 print('Alright! Lesion confirmed. Moving forward with segmentation.')
+                isLesion = True
                 pass
             else:
                 print('Skipping current possible lesion!')
+                isLesion = False
                 passCurr = True
             if passCurr:
                 curr_e = curr_e + 1
@@ -456,7 +458,7 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
                     labels = np.array(np.append(np.ones((1,int(yn[0]))),np.zeros((1,int(yn[1])))), np.int32)
                 else:
                     continue
-                if not sum(labels) == 0:
+                if not len(labels) == 0:
                     print(labels)
                     print(coordinates)
                     _, out_obj_ids, out_mask_logits = video_predictor.add_new_points_or_box(
@@ -521,25 +523,22 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
             if n == 2:
                 slice_2d = image_data[:,:,slices[n]]
                         # Display the results
-            fig, ax = plt.subplots(1, len(out_mask_logits[0]), figsize=(20, 10))
-            for i in range(len(out_mask_logits[0])):
+            fig, ax = plt.subplots(1, len(out_mask_logits), figsize=(20, 10))
+            for i in range(len(out_mask_logits)):
 
 
                 # Calculate gradient
-                gradient_x, gradient_y = np.gradient(out_mask_logits[0][i].cpu())
+                #gradient_x, gradient_y = np.gradient(out_mask_logits[i].cpu())
 
                 # Calculate magnitude
-                magnitude = np.sqrt(gradient_x**2 + gradient_y**2)
+                #magnitude = np.sqrt(gradient_x**2 + gradient_y**2)
 
 
-                print(out_mask_logits[0][i].shape)
+                print(out_mask_logits[i][0].shape)
 
                 ax.imshow(slice_2d, cmap="gray")
-                im = ax.imshow((out_mask_logits[0][i].cpu().numpy()), alpha=0.2, cmap="jet")#out_mask_logits[0][i].cpu().numpy()
+                im = ax.imshow((out_mask_logits[i][0].cpu().numpy()), alpha=0.2, cmap="viridis")#out_mask_logits[0][i].cpu().numpy()
                 ax.set_title(f"Mask {i}")
-                # ax[i].imshow(slice_2d, cmap="gray")
-                # im = ax[i].imshow((out_mask_logits[0][i].cpu().numpy()), alpha=0.2, cmap="jet")#out_mask_logits[0][i].cpu().numpy()
-                # ax[i].set_title(f"Mask {i}")
                 #ax[i].axis("off")
                 fig.colorbar(im, ax=ax)
 

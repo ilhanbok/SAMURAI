@@ -528,7 +528,7 @@ if pickleIt:
     if havearray == 'Si':
         coordinates = []
         first = True
-        with open('/Users/bok/Library/CloudStorage/Box-Box/Belton_Lab_Ilhan/QSM_Pipeline_Belton_Lab/qsm-proc-main/preload_07_1064') as f:
+        with open('/Users/bok/Library/CloudStorage/Box-Box/Belton_Lab_Ilhan/Radiomics_project/Segmentation/01_1021_preload.txt') as f:
             for line in f:
                 fl = line.split(',')
                 fl = [s.strip() for s in fl]
@@ -547,6 +547,7 @@ if pickleIt:
         fig, ax=plt.subplots()
         print(editor.min_val)
         print(editor.max_val)
+        print('slice: {0}'.format(editor.slices[n]))
         if n == 0:
             slice_data = data[editor.slices[0], :, :]
         if n == 1:
@@ -663,7 +664,7 @@ if pickleIt:
     for out_frame_idx, out_obj_ids, out_mask_logits in video_predictor.propagate_in_video(inference_state):
         print(out_frame_idx)
         video_segments[out_frame_idx] = {
-            out_obj_id: (out_mask_logits[i] > 2.0).cpu().numpy()
+            out_obj_id: (out_mask_logits[i] > -3.0).cpu().numpy()
             for i, out_obj_id in enumerate(out_obj_ids)
         }
 
@@ -672,7 +673,7 @@ if pickleIt:
 
     for out_frame_idx, out_obj_ids, out_mask_logits in video_predictor.propagate_in_video(inference_state,reverse=True):
         video_segments[out_frame_idx] = {
-            out_obj_id: (out_mask_logits[i] > 2.0).cpu().numpy()
+            out_obj_id: (out_mask_logits[i] > -3.0).cpu().numpy()
             for i, out_obj_id in enumerate(out_obj_ids)
         }
 
