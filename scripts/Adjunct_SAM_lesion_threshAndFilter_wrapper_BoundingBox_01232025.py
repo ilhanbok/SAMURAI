@@ -449,6 +449,8 @@ import matplotlib.pyplot as plt
 
 pickleIt = True
 
+fwrite = open('data_{0}.txt'.format(sys.argv[1].split('/')[-1]),'w')
+
 times_taken = np.array([])
 if pickleIt:
 
@@ -493,6 +495,7 @@ if pickleIt:
                 rect.set_height(abs(y1 - y0))
                 box[:] = [x0, y0, x1, y1]
                 print("Selected Box:", box)
+                fwrite.write(f'{box[0]}  {box[1]}  {box[2]}  {box[3]}')
                 plt.draw()
                 self.ff = True
 
@@ -558,6 +561,7 @@ if pickleIt:
 
     print(f"JPEG stack saved to {output_dir}")
     times_taken = np.append(times_taken, time.time() - start_time)
+    print(times_taken)
 
     sam2_model = build_sam2(model_cfg, sam2_checkpoint, device=device)
     video_predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint, device=device)
@@ -573,15 +577,22 @@ if pickleIt:
     if havearray == 'Si':
         coordinates = []
         first = True
-        with open('/Users/bok/Library/CloudStorage/Box-Box/Belton_Lab_Ilhan/Radiomics_project/Segmentation/01_1021_sagittal_cropped') as f:
+        with open('/Users/bok/Library/CloudStorage/Box-Box/Belton_Lab_Ilhan/Radiomics_project/Segmentation/01_1051_boundingbox') as f:
+            ln = 0
             for line in f:
-                fl = line.split(',')
-                fl = [s.strip() for s in fl]
-                if first:
-                    yn = [fl[0],fl[1]]
-                    first = False
-                else:
-                    coordinates.append((fl[0],fl[1]))
+                if ln == 0:
+                    pass
+                if ln == 1:
+                    box = np.array(line.split()).astype(float).astype(int)
+                if ln >= 2:
+                    fl = line.split(',')
+                    fl = [s.strip() for s in fl]
+                    if first:
+                        yn = [fl[0],fl[1]]
+                        first = False
+                    else:
+                        coordinates.append((fl[0],fl[1]))
+                ln += 1
         gusta = True
         times_taken = np.append(times_taken,'0 (preload)')
     else:
@@ -593,6 +604,7 @@ if pickleIt:
         print(editor.min_val)
         print(editor.max_val)
         print('slice: {0}'.format(editor.slices[n]))
+        fwrite.write('slice: {0}'.format(editor.slices[n]))
         if n == 0:
             slice_data = data[editor.slices[0], :, :]
         if n == 1:
@@ -621,6 +633,7 @@ if pickleIt:
                     yn = input('Please enter fg (1) or bg (0) list: ')
                     yn = yn.split(' ')
                     print(yn)
+                    fwrite.write(f'{yn[0]}, {yn[1]}')
                     gusta = True
                     confirmed = True
                 else:
@@ -636,6 +649,7 @@ if pickleIt:
                 pass
 
     times_taken = np.append(times_taken, time.time() - start_time)
+    print(times_taken)
 
     # Let's add a positive click at (x, y)
     points = np.array(coordinates, dtype=np.float32)
@@ -681,6 +695,7 @@ if pickleIt:
         #ax[i].axis("off")
         fig.colorbar(im, ax=ax)
     times_taken = np.append(times_taken, time.time() - start_time)
+    print(times_taken)
     plt.show()
 
 
@@ -722,7 +737,7 @@ if pickleIt:
     for out_frame_idx, out_obj_ids, out_mask_logits in video_predictor.propagate_in_video(inference_state):
         print(out_frame_idx)
         video_segments[out_frame_idx] = {
-            out_obj_id: (out_mask_logits[i].cpu().numpy() > 1.0)
+            out_obj_id: (out_mask_logits[i].cpu().numpy() > 2.0)
             for i, out_obj_id in enumerate(out_obj_ids)
         }
 
@@ -731,11 +746,12 @@ if pickleIt:
 
     for out_frame_idx, out_obj_ids, out_mask_logits in video_predictor.propagate_in_video(inference_state,reverse=True):
         video_segments[out_frame_idx] = {
-            out_obj_id: (out_mask_logits[i].cpu().numpy() > 1.0)
+            out_obj_id: (out_mask_logits[i].cpu().numpy() > 2.0)
             for i, out_obj_id in enumerate(out_obj_ids)
         }
 
     times_taken = np.append(times_taken, time.time() - start_time)
+    print(times_taken)
 
     def rot270(img):
         return np.rot90(np.rot90(np.rot90(img)))
@@ -772,6 +788,7 @@ times_taken = np.append(times_taken, time.time() - start_time)
 print('Slice selection time: {0}\nPoint selection time: {1}\nMask confirmation time: {2}\nMask propagation time: {3}\nOutput validation time: {4}\n(in seconds)'.format(times_taken[0],times_taken[1],times_taken[2],times_taken[3],times_taken[4]))
 with open('times_SAMURAI.txt','w') as wt:
     wt.write('Slice selection time: {0}\nPoint selection time: {1}\nMask confirmation time: {2}\nMask propagation time: {3}\nOutput validation time: {4}\n (in seconds)'.format(times_taken[0],times_taken[1],times_taken[2],times_taken[3],times_taken[4]))
+fwrite.close()
 quit()
 
 def check_overlapping_entries(arr1, arr2):
@@ -1305,7 +1322,7 @@ if pickleIt:
         if event.inaxes:
             coordinates.append((event.xdata, event.ydata))
             print(f"Mouse clicked at: {event.xdata}, {event.ydata}")
-
+            fwrite.write(f'{event.xdata}, {event.ydata}')
             # Optionally, plot the point where clicked
             plt.plot(event.xdata, event.ydata, 'ro')
             plt.draw()
