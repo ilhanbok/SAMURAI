@@ -217,8 +217,7 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
 
     print(f"using device: {device}")
 
-
-    sam2_checkpoint = "/Users/bok/Library/CloudStorage/Box-Box/Belton_Lab_Ilhan/QSM_Pipeline_Belton_Lab/qsm-proc-main/sam2.1_hiera_large.pt"
+    sam2_checkpoint = "../sam2/checkpoints/sam2.1_hiera_large.pt"
     model_cfg = "configs/sam2.1/sam2.1_hiera_l.yaml"
 
     # Load the NIfTI file
@@ -259,7 +258,7 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
     # Load the NIfTI file
     makeDir = True
 
-    output_dir = "01_1011_001"
+    output_dir = "temp_jpeg_stack"
     if makeDir:
         subprocess.run(['rm','-rf',output_dir])
         os.makedirs(output_dir, exist_ok=True)
@@ -271,7 +270,9 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
     data = (data - np.min(data)) / (np.max(data) - np.min(data)) * 255
     data = data.astype(np.uint8)
     frame_names = []
-    n = 2
+
+    # 0: coronal, 1: axial, 2: sagittal
+    n = 1
     # Iterate through slices and save as JPEG
     for i in range(data.shape[n]):  # Assuming 3D data
         if makeDir:
@@ -300,7 +301,7 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
             # Optionally, plot the point where clicked
             plt.plot(event.xdata, event.ydata, 'ro')
             plt.draw()
-    Volume_threshold_min = 10
+    Volume_threshold_min = 100
     Volume_threshold_max = 1e6
     list_of_centroids = np.array(list_of_centroids)
     list_of_corresponding_indices = np.array(list_of_corresponding_indices)
@@ -348,11 +349,13 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
     curr_e = 0
     unique_loop = pd.unique(list_of_corresponding_indices)
     unique_vols = pd.unique(volumes)
-
-    while curr_e < len(unique_loop):
+    isLesion = True
+    nifti_res_fin = np.zeros(size)
+    while curr_e < len(unique_vols):
         print('lesion ID: {0}'.format(curr_e))
         e = unique_loop[curr_e]
-        inference_state = video_predictor.init_state(video_path=output_dir)
+        if isLesion:
+            inference_state = video_predictor.init_state(video_path=output_dir)
         if pickleIt:
             #print(e)
             #print(list_of_corresponding_indices)
@@ -380,7 +383,7 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
             # [79,124,197] #05_1003 (MP_RAGE)
             print(slices)
             # Determine the most frequent slice
-            ir = slices[:,2]
+            ir = slices[:,n]
             counter = Counter(ir)
             most_common_element = counter.most_common(1)
             print(most_common_element)
@@ -409,7 +412,12 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
             #box = [box_prev[1],box_prev[0],box_prev[3],box_prev[2]]
             print('Volume:')
             print(unique_vols[curr_e])
-            plt.scatter(slices[:,1],slices[:,0],color='#FF0000',alpha=0.2)
+            if n == 0:
+                plt.scatter(slices[:,2],slices[:,1],color='#FF0000',alpha=0.2)
+            if n == 1:
+                plt.scatter(slices[:,2],slices[:,0],color='#FF0000',alpha=0.2)
+            if n == 2:
+                plt.scatter(slices[:,1],slices[:,0],color='#FF0000',alpha=0.2)
             #fig.canvas.mpl_connect('button_press_event', on_click)
             plt.show()
 
@@ -418,9 +426,11 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
             passCurr = False
             if (g == 'Si') or (g == ''):
                 print('Alright! Lesion confirmed. Moving forward with segmentation.')
+                isLesion = True
                 pass
             else:
                 print('Skipping current possible lesion!')
+                isLesion = False
                 passCurr = True
             if passCurr:
                 curr_e = curr_e + 1
@@ -456,7 +466,7 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
                     labels = np.array(np.append(np.ones((1,int(yn[0]))),np.zeros((1,int(yn[1])))), np.int32)
                 else:
                     continue
-                if not sum(labels) == 0:
+                if not len(labels) == 0:
                     print(labels)
                     print(coordinates)
                     _, out_obj_ids, out_mask_logits = video_predictor.add_new_points_or_box(
@@ -475,7 +485,7 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
             #quit()
             # 0.3 for mag images 02_1070
             # 0.05 01_1007 GRE
-            eta = 0.1 # sparsity index
+            eta = 0.2 # sparsity index
             slices_permuted = sparsify(slices, eta)
             eta_bg = 0.007
             # Create a mask to identify elements in arr1 that are also in arr2
@@ -499,7 +509,12 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
             #slices_permuted = slices
             num_centroids = len(slices_permuted)
             for j in range(num_centroids):
-                coordinates.append((slices_permuted[j][1],slices_permuted[j][0]))
+                if n == 0:
+                    coordinates.append((slices_permuted[j][2],slices_permuted[j][1]))
+                if n == 1:
+                    coordinates.append((slices_permuted[j][2],slices_permuted[j][0]))
+                if n == 2:
+                    coordinates.append((slices_permuted[j][1],slices_permuted[j][0]))
 
                 labels = np.append(labels,1)
             points = np.array(coordinates, dtype=np.float32)
@@ -515,31 +530,28 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
 
             masks = out_mask_logits
             if n == 0:
-                slice_2d = image_data[slices[n],:,:]
+                slice_2d = image_data[:,:,slices[n]]
             if n == 1:
                 slice_2d = image_data[:,slices[n],:]
             if n == 2:
                 slice_2d = image_data[:,:,slices[n]]
                         # Display the results
-            fig, ax = plt.subplots(1, len(out_mask_logits[0]), figsize=(20, 10))
-            for i in range(len(out_mask_logits[0])):
+            fig, ax = plt.subplots(1, len(out_mask_logits), figsize=(20, 10))
+            for i in range(len(out_mask_logits)):
 
 
                 # Calculate gradient
-                gradient_x, gradient_y = np.gradient(out_mask_logits[0][i].cpu())
+                #gradient_x, gradient_y = np.gradient(out_mask_logits[i].cpu())
 
                 # Calculate magnitude
-                magnitude = np.sqrt(gradient_x**2 + gradient_y**2)
+                #magnitude = np.sqrt(gradient_x**2 + gradient_y**2)
 
 
-                print(out_mask_logits[0][i].shape)
+                print(out_mask_logits[i][0].shape)
 
                 ax.imshow(slice_2d, cmap="gray")
-                im = ax.imshow((out_mask_logits[0][i].cpu().numpy()), alpha=0.2, cmap="jet")#out_mask_logits[0][i].cpu().numpy()
+                im = ax.imshow((out_mask_logits[i][0].cpu().numpy()), alpha=0.2, cmap="viridis")#out_mask_logits[0][i].cpu().numpy()
                 ax.set_title(f"Mask {i}")
-                # ax[i].imshow(slice_2d, cmap="gray")
-                # im = ax[i].imshow((out_mask_logits[0][i].cpu().numpy()), alpha=0.2, cmap="jet")#out_mask_logits[0][i].cpu().numpy()
-                # ax[i].set_title(f"Mask {i}")
                 #ax[i].axis("off")
                 fig.colorbar(im, ax=ax)
 
@@ -572,7 +584,7 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
             video_segments = {}  # video_segments contains the per-frame segmentation results
             for out_frame_idx, out_obj_ids, out_mask_logits in video_predictor.propagate_in_video(inference_state):
                 video_segments[out_frame_idx] = {
-                    out_obj_id: (out_mask_logits[i] > 0.0).cpu().numpy()
+                    out_obj_id: (out_mask_logits[i] > 2.0).cpu().numpy()
                     for i, out_obj_id in enumerate(out_obj_ids)
                 }
 
@@ -581,7 +593,7 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
 
             for out_frame_idx, out_obj_ids, out_mask_logits in video_predictor.propagate_in_video(inference_state,reverse=True):
                 video_segments[out_frame_idx] = {
-                    out_obj_id: (out_mask_logits[i] > 0.0).cpu().numpy()
+                    out_obj_id: (out_mask_logits[i] > 2.0).cpu().numpy()
                     for i, out_obj_id in enumerate(out_obj_ids)
                 }
 
@@ -591,18 +603,24 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
             print('Applying rankings...')
             for i in video_segments.keys():#range(len(video_segments)):
                 for out_obj_id, out_mask in video_segments[i].items():
-                    nifti_res[:,:,i] = out_mask[0]#nifti_res_SAMonly_lesionrank[:,:,i] + np.multiply(out_mask[0],max_lesion_cont[i])#curr_mask_0_symmetrycheck
+                    if n == 0:
+                        nifti_res[i,:,:] = out_mask[0]#nifti_res_SAMonly_lesionrank[:,:,i] + np.multiply(out_mask[0],max_lesion_cont[i])#curr_mask_0_symmetrycheck
+                    if n == 1:
+                        nifti_res[:,i,:] = out_mask[0]
+                    if n == 2:
+                        nifti_res[:,:,i] = out_mask[0]
             print(np.where(nifti_res > 0))
+            nifti_res_fin = nifti_res.astype(bool) | nifti_res_fin.astype(bool)
             nifti_mask = nib.Nifti1Image(nifti_res, affine=nib.load(nifti_path).affine)
             nib.save(nifti_mask, '{0}_240_lesionnum_{1}.nii.gz'.format(output_csv,e))
 
             curr_e = curr_e + 1
         else:
-            n = 2
             data = image_data
             with open('{0}_240_lesionnum_{1}.pkl'.format(output_csv,e),'rb') as f:
                 video_segments = pickle.load(f)
-
+    print('All lesions have been assessed.')
+    sys.exit(0)
     def check_overlapping_entries(arr1, arr2):
 
         # Find the number of entries in common by position

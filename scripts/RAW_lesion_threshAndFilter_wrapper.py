@@ -59,8 +59,8 @@ def main(nifti_path, output_csv = "RAW.csv", RAW_cutoff = 400, flip = 0, sigma =
     nifti_mask = nib.Nifti1Image(thresholded_img, affine=nib.load(nifti_path).affine)
     nib.save(nifti_mask,'{0}_thresholded_at_{1}_gaub.nii'.format(nifti_path,RAW_cutoff));
 
-    # axial
-    n = 2
+    # 0: coronal, 1: axial, 2: sagittal
+    n = 0
     # Use the ROI merger and note the max for each cluster.
     def check_overlapping_entries(arr1, arr2):
 
@@ -198,9 +198,9 @@ def main(nifti_path, output_csv = "RAW.csv", RAW_cutoff = 400, flip = 0, sigma =
         region_size = np.sum(labeled_array == label_id)  # Count pixels in the region
         region_areas[label_id] = region_size
 
-    for i in range(len(thresholded_img[0,0,:])):
+    for i in range(len(thresholded_img[:,0,0])):
         s = generate_binary_structure(2,2)
-        labeled_array, num_features = label(thresholded_img[:,:,i], structure=s)
+        labeled_array, num_features = label(thresholded_img[i,:,:], structure=s)
         print(i)
         print('has {0} unique features'.format(num_features))
         # Save that thresholded image in order to refer later
@@ -262,7 +262,7 @@ def main(nifti_path, output_csv = "RAW.csv", RAW_cutoff = 400, flip = 0, sigma =
     print('Applying rankings...')
     for i in range(len(video_segments)):
         for out_obj_id, out_mask in video_segments[i].items():
-            nifti_res_SAMonly_lesionrank[:,:,i] = nifti_res_SAMonly_lesionrank[:,:,i] + np.multiply(out_mask[0],max_lesion_cont[i])#curr_mask_0_symmetrycheck
+            nifti_res_SAMonly_lesionrank[i,:,:] = nifti_res_SAMonly_lesionrank[i,:,:] + np.multiply(out_mask[0],max_lesion_cont[i])#curr_mask_0_symmetrycheck
     print(np.where(nifti_res_SAMonly_lesionrank > 0))
     nifti_mask = nib.Nifti1Image(nifti_res, affine=nib.load(nifti_path).affine)
     nib.save(nifti_mask, 'output_video_02_1070_2_10152014_23u489123u+dir={0}_rot90_sym_rawdata_37489237_1_overlap190_countermode_2_skullstripped.nii.gz'.format(n))
