@@ -513,6 +513,7 @@ if pickleIt:
 
     print(f"JPEG stack saved to {output_dir}")
     times_taken = np.append(times_taken, time.time() - start_time)
+    print(times_taken)
 
     sam2_model = build_sam2(model_cfg, sam2_checkpoint, device=device)
     video_predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint, device=device)
@@ -528,7 +529,7 @@ if pickleIt:
     if havearray == 'Si':
         coordinates = []
         first = True
-        with open('/Users/bok/Library/CloudStorage/Box-Box/Belton_Lab_Ilhan/Radiomics_project/Segmentation/01_1021_preload.txt') as f:
+        with open('/Users/bok/Library/CloudStorage/Box-Box/Belton Lab/Radiomics_project/Segmentation/Preloaders/01_1149_preload_coronal_slice130') as f:
             for line in f:
                 fl = line.split(',')
                 fl = [s.strip() for s in fl]
@@ -538,7 +539,25 @@ if pickleIt:
                 else:
                     coordinates.append((fl[0],fl[1]))
         gusta = True
+        if n == 0:
+            slice_data = data[130, :, :]
+        if n == 1:
+            slice_data = data[:, 130, :]
+        if n == 2:
+            slice_data = data[:, :, 130]
         times_taken = np.append(times_taken,'0 (preload)')
+        imshow_click = plt.imshow(slice_data)#clim=(editor.min_val, editor.max_val),vmin=editor.min_val,vmax=editor.max_val,cmap='viridis')
+        #imshow_click.set_clim(editor.min_val, editor.max_val)
+        #plt.show()
+        print(coordinates)
+        xs = []
+        ys = []
+        for c in coordinates:
+            xs.append(float(c[0]))
+            ys.append(float(c[1]))
+        plt.scatter(xs,ys,c='r')
+        plt.show()
+        print(times_taken)
     else:
         start_time = time.time()
         gusta = False
@@ -554,8 +573,8 @@ if pickleIt:
             slice_data = data[:, editor.slices[1], :]
         if n == 2:
             slice_data = data[:, :, editor.slices[2]]
-        imshow_click = plt.imshow(slice_data,clim=(editor.min_val, editor.max_val),vmin=editor.min_val,vmax=editor.max_val,cmap='viridis')
-        imshow_click.set_clim(editor.min_val, editor.max_val)
+        imshow_click = plt.imshow(slice_data)#clim=(editor.min_val, editor.max_val),vmin=editor.min_val,vmax=editor.max_val,cmap='viridis')
+        #imshow_click.set_clim(editor.min_val, editor.max_val)
         fig.canvas.mpl_connect('button_press_event', on_click)
         plt.show()
         g = input('Gusta? (Si/No)')
@@ -581,6 +600,8 @@ if pickleIt:
                 pass
 
     times_taken = np.append(times_taken, time.time() - start_time)
+    print(times_taken)
+
 
     # Let's add a positive click at (x, y)
     points = np.array(coordinates, dtype=np.float32)
@@ -616,6 +637,7 @@ if pickleIt:
 
 
         print(out_mask_logits[i][0].shape)
+        print(i)
 
         ax.imshow(slice_2d, cmap="gray")
         im = ax.imshow((out_mask_logits[i][0].cpu().numpy()), alpha=0.2, cmap="viridis")#out_mask_logits[0][i].cpu().numpy()
@@ -623,6 +645,8 @@ if pickleIt:
         #ax[i].axis("off")
         fig.colorbar(im, ax=ax)
     times_taken = np.append(times_taken, time.time() - start_time)
+    print(times_taken)
+
     plt.show()
 
 
@@ -664,7 +688,7 @@ if pickleIt:
     for out_frame_idx, out_obj_ids, out_mask_logits in video_predictor.propagate_in_video(inference_state):
         print(out_frame_idx)
         video_segments[out_frame_idx] = {
-            out_obj_id: (out_mask_logits[i] > -3.0).cpu().numpy()
+            out_obj_id: (out_mask_logits[i].cpu().numpy() > 0.0)
             for i, out_obj_id in enumerate(out_obj_ids)
         }
 
@@ -673,11 +697,13 @@ if pickleIt:
 
     for out_frame_idx, out_obj_ids, out_mask_logits in video_predictor.propagate_in_video(inference_state,reverse=True):
         video_segments[out_frame_idx] = {
-            out_obj_id: (out_mask_logits[i] > -3.0).cpu().numpy()
+            out_obj_id: (out_mask_logits[i].cpu().numpy() > 0.0)
             for i, out_obj_id in enumerate(out_obj_ids)
         }
 
     times_taken = np.append(times_taken, time.time() - start_time)
+    print(times_taken)
+
 
     def rot270(img):
         return np.rot90(np.rot90(np.rot90(img)))
@@ -711,6 +737,7 @@ with open('01_1059_20241226.pkl','rb') as f:
     nifti_mask = nib.Nifti1Image(nifti_res, affine=nib.load(nifti_path).affine)
 nib.save(nifti_mask,'output_SAMURAI.nii.gz')
 times_taken = np.append(times_taken, time.time() - start_time)
+print(times_taken)
 print('Slice selection time: {0}\nPoint selection time: {1}\nMask confirmation time: {2}\nMask propagation time: {3}\nOutput validation time: {4}\n(in seconds)'.format(times_taken[0],times_taken[1],times_taken[2],times_taken[3],times_taken[4]))
 with open('times_SAMURAI.txt','w') as wt:
     wt.write('Slice selection time: {0}\nPoint selection time: {1}\nMask confirmation time: {2}\nMask propagation time: {3}\nOutput validation time: {4}\n (in seconds)'.format(times_taken[0],times_taken[1],times_taken[2],times_taken[3],times_taken[4]))
@@ -1422,7 +1449,7 @@ if pickleIt:
         for out_frame_idx, out_obj_ids, out_mask_logits in video_predictor.propagate_in_video(inference_state):
             print(out_frame_idx)
             video_segments[out_frame_idx] = {
-                out_obj_id: (out_mask_logits[i] > 2.0).cpu().numpy()
+                out_obj_id: (out_mask_logits[i] > 18.0).cpu().numpy()
                 for i, out_obj_id in enumerate(out_obj_ids)
             }
 
@@ -1431,7 +1458,7 @@ if pickleIt:
 
         for out_frame_idx, out_obj_ids, out_mask_logits in video_predictor.propagate_in_video(inference_state,reverse=True):
             video_segments[out_frame_idx] = {
-                out_obj_id: (out_mask_logits[i] > 2.0).cpu().numpy()
+                out_obj_id: (out_mask_logits[i] > 18.0).cpu().numpy()
                 for i, out_obj_id in enumerate(out_obj_ids)
             }
 
