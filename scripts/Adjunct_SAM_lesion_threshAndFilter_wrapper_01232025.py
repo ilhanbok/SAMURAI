@@ -526,10 +526,10 @@ if pickleIt:
 
     havearray = input('Did you preload an array of points? (Si/No)')
     #frame_names = np.array(list(range(data.shape[2]))).astype(str)
+    coordinates = []
     if havearray == 'Si':
-        coordinates = []
         first = True
-        with open('/Users/bok/Library/CloudStorage/Box-Box/Belton Lab/Radiomics_project/Segmentation/Preloaders/01_1149_preload_coronal_slice130') as f:
+        with open('/Users/bok/Library/CloudStorage/Box-Box/Belton Lab/RadiomicsProject_CachedBackup4/Segmentation/Preloaders/02_1081_2_success_1') as f:
             for line in f:
                 fl = line.split(',')
                 fl = [s.strip() for s in fl]
@@ -538,7 +538,6 @@ if pickleIt:
                     first = False
                 else:
                     coordinates.append((fl[0],fl[1]))
-        gusta = True
         if n == 0:
             slice_data = data[130, :, :]
         if n == 1:
@@ -562,7 +561,6 @@ if pickleIt:
         start_time = time.time()
         gusta = False
     while gusta == False:
-        coordinates = []
         fig, ax=plt.subplots()
         print(editor.min_val)
         print(editor.max_val)

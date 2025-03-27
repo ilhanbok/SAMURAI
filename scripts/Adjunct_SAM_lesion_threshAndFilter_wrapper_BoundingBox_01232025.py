@@ -593,13 +593,14 @@ if pickleIt:
                     else:
                         coordinates.append((fl[0],fl[1]))
                 ln += 1
-        gusta = True
+        gusta = False
         times_taken = np.append(times_taken,'0 (preload)')
     else:
         start_time = time.time()
         gusta = False
-    while gusta == False:
         coordinates = []
+    while gusta == False:
+
         fig, ax=plt.subplots()
         print(editor.min_val)
         print(editor.max_val)
