@@ -98,6 +98,55 @@ To use mode (ii):
 - As for mode (i), there will be a pop-up point selection window to add additional foreground / background points before a final confirmation dialog
 - Each lesion has a unique identification number which will be appended to its output NIFTI file. These files can be merged and viewed as a final .nii mask.
 
+## Additional editing
+____________________________________
+
+After confirming SAMURAI output, output will be stored in one of two forms:
+```
+SAMURAI
+|----scripts
+|    |----output_SAMURAI.nii.gz
+|    |----times_SAMURAI.txt
+
+OR
+
+SAMURAI
+|----scripts
+|    |----temp_240_lesionnum_<n1>.nii.gz
+|    |----temp_240_lesionnum_<n2>.nii.gz
+|    |----temp_240_lesionnum_<n3>.nii.gz
+...
+```
+You can use the following operations to combine selected files into aggregate
+masks
+
+for example:
+`mkdir combined_lesions`
+`mv *.nii.gz combined_lesions`
+
+You may also run SAMURAI multiple times to generate more masks for aggregation
+
+The following Python scripts are intended to help with editing NIFTI files
+produced by SAMURAI.
+
+1. MERGE.py
+Description: Combine multiple NIFTI files into a single NIFTI file.
+
+Usage:
+`python MERGE.py input_dir output_file`
+Example:
+`python MERGE.py scripts/combined_lesions subject_<m>.nii.gz`
+
+2. ZERO.py
+Description:
+Used to delete slices within a range for spurious segmentation output.
+
+Usage:
+`python ZERO.py input_file output_file slice_start slice_finish`
+Example:
+`python ZERO.py subject_<m>.nii.gz subject_<m>_zeroed.nii.gz 0 14
+`
+
 ## About/Contact Information
 
 Patrick Belton (belton@neurosurgery.wisc.edu)<br>

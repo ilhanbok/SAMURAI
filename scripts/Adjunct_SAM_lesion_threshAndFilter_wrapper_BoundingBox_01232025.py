@@ -593,13 +593,14 @@ if pickleIt:
                     else:
                         coordinates.append((fl[0],fl[1]))
                 ln += 1
-        gusta = True
+        gusta = False
         times_taken = np.append(times_taken,'0 (preload)')
     else:
         start_time = time.time()
         gusta = False
-    while gusta == False:
         coordinates = []
+    while gusta == False:
+
         fig, ax=plt.subplots()
         print(editor.min_val)
         print(editor.max_val)
@@ -783,12 +784,14 @@ with open('01_1059_20241226.pkl','rb') as f:
     nifti_res = np.transpose(nifti_res)
 
     nifti_mask = nib.Nifti1Image(nifti_res, affine=nib.load(nifti_path).affine)
-nib.save(nifti_mask,'output_SAMURAI.nii.gz')
+import time
+timestr = time.strftime("%Y%m%d-%H%M%S")
+nib.save(nifti_mask,'output_SAMURAI_{0}.nii.gz'.format(timestr))
 times_taken = np.append(times_taken, time.time() - start_time)
+print(times_taken)
 print('Slice selection time: {0}\nPoint selection time: {1}\nMask confirmation time: {2}\nMask propagation time: {3}\nOutput validation time: {4}\n(in seconds)'.format(times_taken[0],times_taken[1],times_taken[2],times_taken[3],times_taken[4]))
-with open('times_SAMURAI.txt','w') as wt:
+with open('times_SAMURAI_{0}.txt'.format(timestr),'w') as wt:
     wt.write('Slice selection time: {0}\nPoint selection time: {1}\nMask confirmation time: {2}\nMask propagation time: {3}\nOutput validation time: {4}\n (in seconds)'.format(times_taken[0],times_taken[1],times_taken[2],times_taken[3],times_taken[4]))
-fwrite.close()
 quit()
 
 def check_overlapping_entries(arr1, arr2):
