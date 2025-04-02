@@ -741,6 +741,7 @@ print(times_taken)
 print('Slice selection time: {0}\nPoint selection time: {1}\nMask confirmation time: {2}\nMask propagation time: {3}\nOutput validation time: {4}\n(in seconds)'.format(times_taken[0],times_taken[1],times_taken[2],times_taken[3],times_taken[4]))
 with open('times_SAMURAI_{0}.txt'.format(timestr),'w') as wt:
     wt.write('Slice selection time: {0}\nPoint selection time: {1}\nMask confirmation time: {2}\nMask propagation time: {3}\nOutput validation time: {4}\n (in seconds)'.format(times_taken[0],times_taken[1],times_taken[2],times_taken[3],times_taken[4]))
+print('Adios!')
 quit()
 
 def check_overlapping_entries(arr1, arr2):
