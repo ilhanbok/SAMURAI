@@ -271,8 +271,8 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
     data = data.astype(np.uint8)
     frame_names = []
 
-    # 0: coronal, 1: axial, 2: sagittal
-    n = 1
+    # 0: sagittal, 1: coronal, 2: axial
+    n = 2
     # Iterate through slices and save as JPEG
     for i in range(data.shape[n]):  # Assuming 3D data
         if makeDir:
@@ -301,7 +301,7 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
             # Optionally, plot the point where clicked
             plt.plot(event.xdata, event.ydata, 'ro')
             plt.draw()
-    Volume_threshold_min = 100
+    Volume_threshold_min = 10
     Volume_threshold_max = 1e6
     list_of_centroids = np.array(list_of_centroids)
     list_of_corresponding_indices = np.array(list_of_corresponding_indices)
@@ -529,12 +529,13 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
             )
 
             masks = out_mask_logits
+            print(slices)
             if n == 0:
-                slice_2d = image_data[:,:,slices[n]]
+                slice_2d = image_data[:,:,slices[0][n]]
             if n == 1:
-                slice_2d = image_data[:,slices[n],:]
+                slice_2d = image_data[:,slices[0][n],:]
             if n == 2:
-                slice_2d = image_data[:,:,slices[n]]
+                slice_2d = image_data[slices[0][n],:,:]
                         # Display the results
             fig, ax = plt.subplots(1, len(out_mask_logits), figsize=(20, 10))
             for i in range(len(out_mask_logits)):
