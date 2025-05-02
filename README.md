@@ -35,7 +35,7 @@ macOS
 
 For macOS:
 ```bash
-python -m venv ./venvs/venv_SAMURAI/ && source ./venvs/venv_SAMURAI/bin/activate && git clone https://github.com/ilhanbok/SAMURAI.git && cd SAMURAI && ./install_SAMURAI.sh && cd scripts
+python -m venv ./venvs/venv_SAMURAI/ && source ./venvs/venv_SAMURAI/bin/activate && git clone https://gitlab.com/ilhanbok/SAMURAI.git && cd SAMURAI && ./install_SAMURAI.sh && cd scripts
 ```
 
 For Windows:<br><br>
@@ -44,7 +44,7 @@ Then run the following in Anaconda Powershell:
 ```bash
 python -m venv ./venvs/venv_SAMURAI/
 source ./venvs/venv_SAMURAI/bin/activate
-git clone https://github.com/ilhanbok/SAMURAI.git
+git clone https://gitlab.com/ilhanbok/SAMURAI.git
 cd SAMURAI
 ./install_SAMURAI.ps1
 cd scripts
@@ -57,7 +57,7 @@ https://github.com/neurolabusc/niivue-images.git
 
 For both:
 ```bash
-git clone https://github.com/neurolabusc/niivue-images.git
+git clone https://gitlab.com/neurolabusc/niivue-images.git
 cd scripts
 ```
 
@@ -65,7 +65,7 @@ cd scripts
 
 There are two modes of operation: (i) Manual (GUI-based) selection and (ii) threshold-based lesion identification.
 
-For DICOM files use a conversion tool such as [dcm2niix](https://github.com/rordenlab/dcm2niix) to create input NIFTI file.
+For DICOM files use a conversion tool such as [dcm2niix](https://gitlab.com/rordenlab/dcm2niix) to create input NIFTI file.
 
 Before execution, ensure all pip and anaconda environments are deactivated.
 
