@@ -377,6 +377,9 @@ class MultiViewMaskEditor:
         plt.show()
 
     def update_display(self):
+        self.masks[0].set_array(self.mask[self.slices[0], :, :])
+        self.masks[1].set_array(self.mask[:, self.slices[1], :])
+        self.masks[2].set_array(self.mask[:, :, self.slices[2]])
         self.imgs[0].set_array(self.volume[self.slices[0], :, :])
         self.imgs[1].set_array(self.volume[:, self.slices[1], :])
         self.imgs[2].set_array(self.volume[:, :, self.slices[2]])
@@ -727,7 +730,7 @@ with open('01_1059_20241226.pkl','rb') as f:
                 nifti_res[:,:,i] = out_mask[0]
     start_time = time.time()
 
-    editor_fin = MaskEditor(image_data, nifti_res, True, editor.axis, editor.min_val, editor.max_val)
+    editor_fin = MultiViewMaskEditor(image_data, nifti_res, True, editor.min_val, editor.max_val)
 
     nifti_res = np.flip(nifti_res,0)
     nifti_res = np.transpose(nifti_res)
@@ -1217,43 +1220,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button
 
-class MaskEditor:
-    def __init__(self, volume, mask, can_toggle):
-        self.volume = volume
-        self.mask = mask
-        self.slice_idx = 0
-
-        self.fig, self.ax = plt.subplots()
-        self.img = self.ax.imshow(self.volume[self.slice_idx+1], cmap='gray')
-        self.mask_overlay = self.ax.imshow(self.mask[self.slice_idx+1], cmap='Reds', alpha=0.5)
-
-        self.ax.set_title(f'Slice {self.slice_idx}')
-        self.fig.canvas.mpl_connect('scroll_event', self.on_scroll)
-        if can_toggle:
-            self.fig.canvas.mpl_connect('button_press_event', self.on_click)
-
-        plt.show()
-
-    def update_display(self):
-        self.img.set_array(self.volume[self.slice_idx])
-        self.mask_overlay.set_array(self.mask[self.slice_idx])
-        self.ax.set_title(f'Slice {self.slice_idx}')
-        self.fig.canvas.draw()
-
-    def on_scroll(self, event):
-        if event.step > 0:
-            self.slice_idx = min(self.slice_idx + 1, self.volume.shape[0] - 1)
-        else:
-            self.slice_idx = max(self.slice_idx - 1, 0)
-        self.update_display()
-
-    def on_click(self, event):
-        if event.inaxes != self.ax:
-            return
-        x, y = int(event.xdata), int(event.ydata)
-        self.mask[self.slice_idx, y, x] = 1 - self.mask[self.slice_idx, y, x]  # Toggle mask value
-        self.update_display()
-
 skull_strip = False
 if skull_strip:
     output_path = "./temp_sks.nii.gz"
@@ -1489,7 +1455,7 @@ with open('01_1059_20241226.pkl','rb') as f:
                 nifti_res[:,:,i] = out_mask[0]
     plt.hist(nifti_res)
     plt.show()
-    editor = MaskEditor(image_data, nifti_res,True)
+    editor = MultiViewMaskEditor(image_data, nifti_res,True)
 
     nifti_mask = nib.Nifti1Image(nifti_res, affine=nib.load(nifti_path).affine)
 nib.save(nifti_mask,'07_1096_NN.nii.gz')
