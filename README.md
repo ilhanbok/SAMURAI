@@ -7,7 +7,7 @@
 ## Introduction
 
 Our abstract:
-> *Machine Learning Segmentation of Magnetic Resonance Images for Radiomics of Traumatic Brain Injury Hematomata*, Neurotrauma 2025 (Philadelphia, PA)
+> *POA.118 - Foundation Model-Assisted, Expert Supervised Segmentation of Hemorrhages on Magnetic Resonance Images in Acute Traumatic Brain Injury Clinical Subjects*, National Neurotrauma Symposium 2025 (Philadelphia, PA)
 
 Adaptation of SAM2 for segmentation of brain hematomas.
 
