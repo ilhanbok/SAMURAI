@@ -377,9 +377,10 @@ class MultiViewMaskEditor:
         plt.show()
 
     def update_display(self):
-        self.masks[0].set_array(self.mask[self.slices[0], :, :])
-        self.masks[1].set_array(self.mask[:, self.slices[1], :])
-        self.masks[2].set_array(self.mask[:, :, self.slices[2]])
+        if self.toggle:
+            self.masks[0].set_array(self.mask[self.slices[0], :, :])
+            self.masks[1].set_array(self.mask[:,self.slices[1], :])
+            self.masks[2].set_array(self.mask[:,:,self.slices[2]])
         self.imgs[0].set_array(self.volume[self.slices[0], :, :])
         self.imgs[1].set_array(self.volume[:, self.slices[1], :])
         self.imgs[2].set_array(self.volume[:, :, self.slices[2]])
