@@ -447,23 +447,40 @@ if skull_strip:
 import matplotlib.pyplot as plt
 
 pickleIt = True
-
+mode = 1
 times_taken = np.array([])
 if pickleIt:
-
+    def on_flip(event):
+        global mode
+        if event.key == ' ':
+            mode = 1-mode
+            if mode == 1:
+                plt.title('Foreground selection mode (space to switch)')
+            else:
+                plt.title('Background selection mode (space to switch)')
+            plt.show()
     # Define a callback function for mouse clicks
     def on_click(event):
+        global mode
         toolbar = plt.get_current_fig_manager().toolbar
         if toolbar.mode:  # Ignore clicks when zoom or pan is active
             return
         # Store the coordinates of the click
         if event.inaxes:
-            coordinates.append((event.xdata, event.ydata))
-            print(f"Mouse clicked at: {event.xdata}, {event.ydata}")
+            if mode == 1:
+                coordinates.append((event.xdata, event.ydata))
+                print(f"Mouse clicked at: {event.xdata}, {event.ydata}")
 
-            # Optionally, plot the point where clicked
-            plt.plot(event.xdata, event.ydata, 'ro')
-            plt.draw()
+                # Optionally, plot the point where clicked
+                plt.plot(event.xdata, event.ydata, 'ro')
+                plt.draw()
+            else:
+                coordinates_bg.append((event.xdata, event.ydata))
+                print(f"Mouse clicked at: {event.xdata}, {event.ydata}")
+
+                # Optionally, plot the point where clicked
+                plt.plot(event.xdata, event.ydata, 'o',color='blue')
+                plt.draw()
     start_time = time.time()
     editor = MultiViewMaskEditor(image_data,np.zeros(image_data.shape),False)
 
@@ -531,6 +548,7 @@ if pickleIt:
     havearray = input('Did you preload an array of points? (Si/No)')
     #frame_names = np.array(list(range(data.shape[2]))).astype(str)
     coordinates = []
+    coordinates_bg = []
     if havearray == 'Si':
         first = True
         with open('/Users/bok/Library/CloudStorage/Box-Box/Belton Lab/RadiomicsProject_CachedBackup4/Segmentation/Preloaders/02_1081_2_success_1') as f:
@@ -542,6 +560,7 @@ if pickleIt:
                     first = False
                 else:
                     coordinates.append((fl[0],fl[1]))
+        coordinates_final = coordinates
         if n == 0:
             slice_data = data[130, :, :]
         if n == 1:
@@ -576,19 +595,26 @@ if pickleIt:
         if n == 2:
             slice_data = data[:, :, editor.slices[2]]
         imshow_click = plt.imshow(slice_data)#clim=(editor.min_val, editor.max_val),vmin=editor.min_val,vmax=editor.max_val,cmap='viridis')
+        plt.title('Foreground selection mode (space to switch)')
         #imshow_click.set_clim(editor.min_val, editor.max_val)
         fig.canvas.mpl_connect('button_press_event', on_click)
+        fig.canvas.mpl_connect('key_press_event', on_flip)
         plt.show()
         g = input('Gusta? (Si/No)')
         confirmed = False
         while confirmed == False :
             try:
                 if g == 'Si':
-                    yn = input('Please enter fg (1) or bg (0) list: ')
-                    yn = yn.split(' ')
-                    print(yn)
+                    yn = [len(coordinates), len(coordinates_bg)]
                     gusta = True
                     confirmed = True
+                    coordinates_final = []
+                    for item in coordinates:
+                        coordinates_final.append(item)
+                    for item in coordinates_bg:
+                        coordinates_final.append(item)
+                    print(coordinates_final)
+                    print(coordinates_bg)
                 else:
                     h = input('Are you sure you want to discard? (Si/No)')
                     if h == 'Si':
@@ -604,9 +630,11 @@ if pickleIt:
     times_taken = np.append(times_taken, time.time() - start_time)
     print(times_taken)
 
-
     # Let's add a positive click at (x, y)
-    points = np.array(coordinates, dtype=np.float32)
+    points = np.array(coordinates_final, dtype=np.float32)
+
+
+    print(yn)
     # for labels, `1` means positive click and `0` means negative click
     labels = np.array(np.append(np.ones((1,int(yn[0]))),np.zeros((1,int(yn[1])))), np.int32)
 
