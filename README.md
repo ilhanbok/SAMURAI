@@ -3,6 +3,7 @@
 <p align="center">
 <img src="logo/Samurai_Helmet_Icon-2.png" width="200" center>
 
+  * [1.0.0 to 1.1.0 Changelog](docs/CHANGELOG.md)
 
 ## Introduction
 
