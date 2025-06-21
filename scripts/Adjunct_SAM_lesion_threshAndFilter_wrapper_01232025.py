@@ -450,36 +450,35 @@ pickleIt = True
 mode = 1
 times_taken = np.array([])
 if pickleIt:
-    def on_flip(event):
+    def on_flip(event, ax):
         global mode
-        if event.key == ' ':
-            mode = 1-mode
-            if mode == 1:
-                plt.title('Foreground selection mode (space to switch)')
-            else:
-                plt.title('Background selection mode (space to switch)')
-            plt.show()
+        mode = 1-mode
+        if mode == 1:
+            ax.set_title('Foreground')
+        else:
+            ax.set_title('Background')
+        plt.show()
     # Define a callback function for mouse clicks
-    def on_click(event):
+    def on_click(event,ax):
         global mode
         toolbar = plt.get_current_fig_manager().toolbar
         if toolbar.mode:  # Ignore clicks when zoom or pan is active
             return
         # Store the coordinates of the click
-        if event.inaxes:
+        if event.inaxes is ax:
             if mode == 1:
                 coordinates.append((event.xdata, event.ydata))
                 print(f"Mouse clicked at: {event.xdata}, {event.ydata}")
 
                 # Optionally, plot the point where clicked
-                plt.plot(event.xdata, event.ydata, 'ro')
+                ax.plot(event.xdata, event.ydata, 'ro')
                 plt.draw()
             else:
                 coordinates_bg.append((event.xdata, event.ydata))
                 print(f"Mouse clicked at: {event.xdata}, {event.ydata}")
 
                 # Optionally, plot the point where clicked
-                plt.plot(event.xdata, event.ydata, 'o',color='blue')
+                ax.plot(event.xdata, event.ydata, 'o',color='blue')
                 plt.draw()
     start_time = time.time()
     editor = MultiViewMaskEditor(image_data,np.zeros(image_data.shape),False)
@@ -569,6 +568,7 @@ if pickleIt:
             slice_data = data[:, :, 130]
         times_taken = np.append(times_taken,'0 (preload)')
         imshow_click = plt.imshow(slice_data)#clim=(editor.min_val, editor.max_val),vmin=editor.min_val,vmax=editor.max_val,cmap='viridis')
+
         #imshow_click.set_clim(editor.min_val, editor.max_val)
         #plt.show()
         print(coordinates)
@@ -584,7 +584,10 @@ if pickleIt:
         start_time = time.time()
         gusta = False
     while gusta == False:
-        fig, ax=plt.subplots()
+        fig, ax = plt.subplots()
+        fig.canvas.mpl_connect('button_press_event',lambda event: on_click(event,ax))
+        ax.set_title('Foreground')
+        flip_ax = plt.axes([0.65, 0.01, 0.3, 0.05])
         print(editor.min_val)
         print(editor.max_val)
         print('slice: {0}'.format(editor.slices[n]))
@@ -594,11 +597,15 @@ if pickleIt:
             slice_data = data[:, editor.slices[1], :]
         if n == 2:
             slice_data = data[:, :, editor.slices[2]]
-        imshow_click = plt.imshow(slice_data)#clim=(editor.min_val, editor.max_val),vmin=editor.min_val,vmax=editor.max_val,cmap='viridis')
-        plt.title('Foreground selection mode (space to switch)')
-        #imshow_click.set_clim(editor.min_val, editor.max_val)
-        fig.canvas.mpl_connect('button_press_event', on_click)
-        fig.canvas.mpl_connect('key_press_event', on_flip)
+        imshow_click = ax.imshow(slice_data)#clim=(editor.min_val, editor.max_val),vmin=editor.min_val,vmax=editor.max_val,cmap='viridis')
+
+        flip_button = Button(flip_ax, '(Click to switch fg/bg)')
+        flip_button.on_clicked(lambda event: on_flip(event,ax))
+
+        imshow_click.set_clim(editor.min_val, editor.max_val)
+
+        # Listen for all key press events
+        #fig.canvas.mpl_connect('key_release_event', on_flip)
         plt.show()
         g = input('Gusta? (Si/No)')
         confirmed = False
