@@ -229,7 +229,7 @@ class MaskEditor:
             self.fig.canvas.mpl_connect('button_press_event', self.on_click)
 
         self.confirm_ax = plt.axes([0.8, 0.01, 0.1, 0.05])
-        self.confirm_button = Button(self.confirm_ax, 'Si?')
+        self.confirm_button = Button(self.confirm_ax, 'Yes?')
         self.confirm_button.on_clicked(self.confirm_output)
 
         self.directions_ax = plt.axes([0.65, 0.01, 0.1, 0.05])
@@ -301,12 +301,12 @@ class MaskEditor:
             directions_text = (
                 "Use the scroll wheel to navigate slices and examine output mask.\n"
                 "Click on a mask point to toggle it.\n"
-                "Click 'Si?' to confirm."
+                "Click 'Yes?' to confirm."
             )
         else:
             directions_text = (
                 "Use the scroll wheel to navigate slices and select segmentation layer.\n"
-                "Click 'Si?' on the corresponding view (axial, coronal, or sagittal) to confirm."
+                "Click 'Yes?' on the corresponding view (axial, coronal, or sagittal) to confirm."
             )
         fig, ax = plt.subplots(figsize=(5, 3))
         ax.text(0.5, 0.5, directions_text, fontsize=12, ha='center', va='center', wrap=True)
@@ -356,7 +356,7 @@ class MultiViewMaskEditor:
         for i, ax in enumerate(self.axes):
             ax.set_title(f'{self.orientations[i]} Axis ({i})')
             button_ax = self.fig.add_axes([0.1 + 0.3 * i, 0.01, 0.1, 0.05])
-            button = Button(button_ax, 'Si')
+            button = Button(button_ax, 'Yes')
             button.on_clicked(lambda event, idx=i: self.confirm_selection(idx))
             self.buttons.append(button)
 
@@ -418,12 +418,12 @@ class MultiViewMaskEditor:
             directions_text = (
                 "Use the scroll wheel to navigate slices and examine output mask.\n"
                 "Click on a mask point to toggle it.\n"
-                "Click 'Si?' to confirm."
+                "Click 'Yes?' to confirm."
             )
         else:
             directions_text = (
                 "Use the scroll wheel to navigate slices and select segmentation layer.\n"
-                "Click 'Si?' on the corresponding view (axial, coronal, or sagittal) to confirm."
+                "Click 'Yes?' on the corresponding view (axial, coronal, or sagittal) to confirm."
             )
         fig, ax = plt.subplots(figsize=(5, 3))
         ax.text(0.5, 0.5, directions_text, fontsize=12, ha='center', va='center', wrap=True)
@@ -544,11 +544,11 @@ if pickleIt:
     # List to store coordinates'
 
 
-    havearray = input('Did you preload an array of points? (Si/No)')
+    havearray = input('Did you preload an array of points? (Yes/No)')
     #frame_names = np.array(list(range(data.shape[2]))).astype(str)
     coordinates = []
     coordinates_bg = []
-    if havearray == 'Si':
+    if havearray == 'Yes':
         first = True
         with open('/Users/bok/Library/CloudStorage/Box-Box/Belton Lab/RadiomicsProject_CachedBackup4/Segmentation/Preloaders/02_1081_2_success_1') as f:
             for line in f:
@@ -582,12 +582,16 @@ if pickleIt:
         print(times_taken)
     else:
         start_time = time.time()
-        gusta = False
-    while gusta == False:
+        Approve = False
+    def confirm_close(event, fig):
+        plt.close(fig)
+
+    while Approve == False:
         fig, ax = plt.subplots()
         fig.canvas.mpl_connect('button_press_event',lambda event: on_click(event,ax))
         ax.set_title('Foreground')
         flip_ax = plt.axes([0.65, 0.01, 0.3, 0.05])
+        si_ax = plt.axes([0.2, 0.01, 0.1, 0.05])
         print(editor.min_val)
         print(editor.max_val)
         print('slice: {0}'.format(editor.slices[n]))
@@ -602,18 +606,22 @@ if pickleIt:
         flip_button = Button(flip_ax, '(Click to switch fg/bg)')
         flip_button.on_clicked(lambda event: on_flip(event,ax))
 
+        confirm_button = Button(si_ax, 'Yes')
+        confirm_button.on_clicked(lambda event: confirm_close(event,fig))
+
+        print(f'Confirmed selection.')
         imshow_click.set_clim(editor.min_val, editor.max_val)
 
         # Listen for all key press events
         #fig.canvas.mpl_connect('key_release_event', on_flip)
         plt.show()
-        g = input('Gusta? (Si/No)')
+        g = input('Approve? (Yes/No)')
         confirmed = False
         while confirmed == False :
             try:
-                if g == 'Si':
+                if g == 'Yes':
                     yn = [len(coordinates), len(coordinates_bg)]
-                    gusta = True
+                    Approve = True
                     confirmed = True
                     coordinates_final = []
                     for item in coordinates:
@@ -623,12 +631,12 @@ if pickleIt:
                     print(coordinates_final)
                     print(coordinates_bg)
                 else:
-                    h = input('Are you sure you want to discard? (Si/No)')
-                    if h == 'Si':
+                    h = input('Are you sure you want to discard? (Yes/No)')
+                    if h == 'Yes':
                         confirmed = True
                     else:
-                        g = 'Si'
-                    gusta = False
+                        g = 'Yes'
+                    Approve = False
             except:
                 print('Incorrect input')
             finally:
@@ -706,16 +714,16 @@ if pickleIt:
 
 
 
-    gusta = False
-    g = input('Gusta? (Si/No)')
+    Approve = False
+    g = input('Approve? (Yes/No)')
     confirmed = False
     while confirmed == False:
-        if g == 'Si':
-            gusta = True
+        if g == 'Yes':
+            Approve = True
             confirmed = True
         else:
-            h = input('Are you sure you want to discard? (Si/No)')
-            if h == 'Si':
+            h = input('Are you sure you want to discard? (Yes/No)')
+            if h == 'Yes':
                 confirmed = True
 
     start_time = time.time()
@@ -780,7 +788,7 @@ print(times_taken)
 print('Slice selection time: {0}\nPoint selection time: {1}\nMask confirmation time: {2}\nMask propagation time: {3}\nOutput validation time: {4}\n(in seconds)'.format(times_taken[0],times_taken[1],times_taken[2],times_taken[3],times_taken[4]))
 with open('times_SAMURAI_{0}.txt'.format(timestr),'w') as wt:
     wt.write('Slice selection time: {0}\nPoint selection time: {1}\nMask confirmation time: {2}\nMask propagation time: {3}\nOutput validation time: {4}\n (in seconds)'.format(times_taken[0],times_taken[1],times_taken[2],times_taken[3],times_taken[4]))
-print('Adios!')
+print('Program ')
 quit()
 
 def check_overlapping_entries(arr1, arr2):
@@ -1328,9 +1336,9 @@ if pickleIt:
         # List to store coordinates'
 
 
-        havearray = input('Did you preload an array of points? (Si/No)')
+        havearray = input('Did you preload an array of points? (Yes/No)')
         #frame_names = np.array(list(range(data.shape[2]))).astype(str)
-        if havearray == 'Si':
+        if havearray == 'Yes':
             coordinates = []
             first = True
             with open('preload_07_1064') as f:
@@ -1342,31 +1350,31 @@ if pickleIt:
                         first = False
                     else:
                         coordinates.append((fl[0],fl[1]))
-            gusta = True
+            Approve = True
         else:
-            gusta = False
-        while gusta == False:
+            Approve = False
+        while Approve == False:
             coordinates = []
             fig, ax=plt.subplots()
             plt.imshow(Image.open(os.path.join(output_dir, frame_names[ann_frame_idx])),interpolation='none')
             fig.canvas.mpl_connect('button_press_event', on_click)
             plt.show()
-            g = input('Gusta? (Si/No)')
+            g = input('Approve? (Yes/No)')
             confirmed = False
             while confirmed == False:
                 try:
-                    if g == 'Si':
+                    if g == 'Yes':
                         yn = input('Please enter fg (1) or bg (0) list: ')
                         yn = yn.split(' ')
                         print(yn)
-                        gusta = True
+                        Approve = True
                         confirmed = True
                     else:
-                        h = input('Are you sure you want to discard? (Si/No)')
-                        if h == 'Si':
+                        h = input('Are you sure you want to discard? (Yes/No)')
+                        if h == 'Yes':
                             confirmed = True
                         else:
-                            g = 'Si'
+                            g = 'Yes'
                 except:
                     print('Incorrect input')
                 finally:
@@ -1434,16 +1442,16 @@ if pickleIt:
 
 
 
-        gusta = False
-        g = input('Gusta? (Si/No)')
+        Approve = False
+        g = input('Approve? (Yes/No)')
         confirmed = False
         while confirmed == False:
-            if g == 'Si':
-                gusta = True
+            if g == 'Yes':
+                Approve = True
                 confirmed = True
             else:
-                h = input('Are you sure you want to discard? (Si/No)')
-                if h == 'Si':
+                h = input('Are you sure you want to discard? (Yes/No)')
+                if h == 'Yes':
                     confirmed = True
 
         # Now do the whole video
