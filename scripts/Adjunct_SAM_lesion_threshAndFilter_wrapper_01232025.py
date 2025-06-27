@@ -324,7 +324,7 @@ class MultiViewMaskEditor:
     def __init__(self, volume, mask, toggle, min_val=0, max_val=0):
         self.volume = volume
         self.mask = mask
-        self.slices = [volume.shape[0] // 2, volume.shape[1] // 2, volume.shape[2] // 2]
+        self.slices = [121, volume.shape[1] // 2, volume.shape[2] // 2]#volume.shape[2] // 2]
         self.toggle = toggle
         self.orientations = ['Axial','Coronal','Sagittal']
 
@@ -340,9 +340,9 @@ class MultiViewMaskEditor:
         self.fig.canvas.mpl_connect('scroll_event', self.on_scroll)
 
         self.imgs = [
-            self.axes[0].imshow(self.volume[self.slices[0], :, :], cmap='gray', vmin=self.min_val, vmax=self.max_val),
-            self.axes[1].imshow(self.volume[:, self.slices[1], :], cmap='gray', vmin=self.min_val, vmax=self.max_val),
-            self.axes[2].imshow(self.volume[:, :, self.slices[2]], cmap='gray', vmin=self.min_val, vmax=self.max_val)
+            self.axes[0].imshow(self.volume[self.slices[0], :, :], cmap='gray', vmin=self.min_val, vmax=self.max_val/2),
+            self.axes[1].imshow(self.volume[:, self.slices[1], :], cmap='gray', vmin=self.min_val, vmax=self.max_val/2),
+            self.axes[2].imshow(self.volume[:, :, self.slices[2]], cmap='gray', vmin=self.min_val, vmax=self.max_val/2)
         ]
 
         if self.toggle:
@@ -449,6 +449,7 @@ import matplotlib.pyplot as plt
 pickleIt = True
 mode = 1
 times_taken = np.array([])
+yn = []
 if pickleIt:
     def on_flip(event, ax):
         global mode
@@ -460,26 +461,27 @@ if pickleIt:
         plt.show()
     # Define a callback function for mouse clicks
     def on_click(event,ax):
+        global yn
         global mode
         toolbar = plt.get_current_fig_manager().toolbar
         if toolbar.mode:  # Ignore clicks when zoom or pan is active
             return
         # Store the coordinates of the click
         if event.inaxes is ax:
+            coordinates.append((event.xdata, event.ydata))
+            print(f"Mouse clicked at: {event.xdata}, {event.ydata}")
+            yn.append(mode)
             if mode == 1:
-                coordinates.append((event.xdata, event.ydata))
-                print(f"Mouse clicked at: {event.xdata}, {event.ydata}")
-
                 # Optionally, plot the point where clicked
-                ax.plot(event.xdata, event.ydata, 'ro')
-                plt.draw()
+                ax.plot(event.xdata, event.ydata, 'ko',markersize=10)#markerfacecolor='w',markeredgecolor='k',markeredgewidth=1,markersize=5)
+                ax.plot(event.xdata, event.ydata, 'wo', markersize=8)
+                ax.plot(event.xdata, event.ydata, 'ko', markersize=6)
+                #ax.plot(event.xdata, event.ydata, markerfacecolor='k',markersize=3.5)
             else:
-                coordinates_bg.append((event.xdata, event.ydata))
-                print(f"Mouse clicked at: {event.xdata}, {event.ydata}")
-
                 # Optionally, plot the point where clicked
-                ax.plot(event.xdata, event.ydata, 'o',color='blue')
-                plt.draw()
+                ax.plot(event.xdata, event.ydata, 'wo',markersize=10)#markerfacecolor='k',markeredgecolor='w',markeredgewidth=1,markersize=4)
+                ax.plot(event.xdata, event.ydata, 'ko', markersize=8)
+            plt.draw()
     start_time = time.time()
     editor = MultiViewMaskEditor(image_data,np.zeros(image_data.shape),False)
 
@@ -547,184 +549,219 @@ if pickleIt:
     havearray = input('Did you preload an array of points? (Yes/No)')
     #frame_names = np.array(list(range(data.shape[2]))).astype(str)
     coordinates = []
-    coordinates_bg = []
-    if havearray == 'Yes':
+    if havearray.lower() == 'yes':
         first = True
-        with open('/Users/bok/Library/CloudStorage/Box-Box/Belton Lab/RadiomicsProject_CachedBackup4/Segmentation/Preloaders/02_1081_2_success_1') as f:
+        with open('/Users/bok/Documents/SAMURAI/scripts/02-1081-points_SAMURAI_20250627-150631-f3b4.txt') as f:
+            index = 0
             for line in f:
+                if line[0] == '#' or line.strip() == "":
+                    continue
                 fl = line.split(',')
                 fl = [s.strip() for s in fl]
                 if first:
-                    yn = [fl[0],fl[1]]
+                    yn = [int(fl[0]),int(fl[1])]
                     first = False
                 else:
-                    coordinates.append((fl[0],fl[1]))
-        coordinates_final = coordinates
-        if n == 0:
-            slice_data = data[130, :, :]
-        if n == 1:
-            slice_data = data[:, 130, :]
-        if n == 2:
-            slice_data = data[:, :, 130]
-        times_taken = np.append(times_taken,'0 (preload)')
-        imshow_click = plt.imshow(slice_data)#clim=(editor.min_val, editor.max_val),vmin=editor.min_val,vmax=editor.max_val,cmap='viridis')
-
-        #imshow_click.set_clim(editor.min_val, editor.max_val)
-        #plt.show()
-        print(coordinates)
-        xs = []
-        ys = []
-        for c in coordinates:
-            xs.append(float(c[0]))
-            ys.append(float(c[1]))
-        plt.scatter(xs,ys,c='r')
-        plt.show()
-        print(times_taken)
-    else:
-        start_time = time.time()
-        Approve = False
-    def confirm_close(event, fig):
-        plt.close(fig)
-
-    while Approve == False:
-        fig, ax = plt.subplots()
-        fig.canvas.mpl_connect('button_press_event',lambda event: on_click(event,ax))
-        ax.set_title('Foreground')
-        flip_ax = plt.axes([0.65, 0.01, 0.3, 0.05])
-        si_ax = plt.axes([0.2, 0.01, 0.1, 0.05])
-        print(editor.min_val)
-        print(editor.max_val)
-        print('slice: {0}'.format(editor.slices[n]))
+                    coordinates.append((float(fl[0]),float(fl[1])))
+            if index < int(yn[0]) + int(yn[1]):
+                print('WARNING: coordinate count lower than specified number (check your preloaded file)')
         if n == 0:
             slice_data = data[editor.slices[0], :, :]
         if n == 1:
             slice_data = data[:, editor.slices[1], :]
         if n == 2:
             slice_data = data[:, :, editor.slices[2]]
-        imshow_click = ax.imshow(slice_data)#clim=(editor.min_val, editor.max_val),vmin=editor.min_val,vmax=editor.max_val,cmap='viridis')
+        times_taken = np.append(times_taken,'0 (preload)')
+        imshow_click = plt.imshow(slice_data, vmin=editor.min_val, vmax=editor.max_val/2)#clim=(editor.min_val, editor.max_val),vmin=editor.min_val,vmax=editor.max_val,cmap='viridis')
 
-        flip_button = Button(flip_ax, '(Click to switch fg/bg)')
-        flip_button.on_clicked(lambda event: on_flip(event,ax))
+        #imshow_click.set_clim(editor.min_val, editor.max_val)
+        #plt.show()
+        print(coordinates)
+        print(times_taken)
+        Approve = False
+        yn = np.append(np.ones(yn[0]),np.zeros(yn[1]))
+    else:
+        start_time = time.time()
+        xs = []
+        ys = []
+        Approve = False
+    def confirm_close(event, fig):
+        plt.close(fig)
+    Final_Approve = False
+    redux = False
+    while Final_Approve == False:
+        print(redux)
+        if redux:
+            yn = []
+            coordinates = []
+            xs = []
+            ys = []
+        while Approve == False:
+            if redux:
+                yn = []
+                coordinates = []
+                xs = []
+                ys = []
+            fig, ax = plt.subplots()
+            fig.canvas.mpl_connect('button_press_event',lambda event: on_click(event,ax))
+            mode = 1
+            ax.set_title('Foreground')
+            flip_ax = plt.axes([0.65, 0.01, 0.3, 0.05])
+            si_ax = plt.axes([0.2, 0.01, 0.1, 0.05])
+            print(editor.min_val)
+            print(editor.max_val)
+            print('slice: {0}'.format(editor.slices[n]))
+            if n == 0:
+                slice_data = data[editor.slices[0], :, :]
+            if n == 1:
+                slice_data = data[:, editor.slices[1], :]
+            if n == 2:
+                slice_data = data[:, :, editor.slices[2]]
+            imshow_click = ax.imshow(slice_data, vmin=editor.min_val*np.max(slice_data)/np.max(image_data), vmax=editor.max_val*np.max(slice_data)/np.max(image_data))#,clim=(editor.min_val, editor.max_val),vmin=editor.min_val,vmax=editor.max_val,cmap='viridis')
 
-        confirm_button = Button(si_ax, 'Yes')
-        confirm_button.on_clicked(lambda event: confirm_close(event,fig))
+            for c in coordinates:
+                print(c)
+                ax.scatter(c[0],c[1],c='r')
 
-        print(f'Confirmed selection.')
-        imshow_click.set_clim(editor.min_val, editor.max_val)
+            flip_button = Button(flip_ax, '(Click to switch fg/bg)')
+            flip_button.on_clicked(lambda event: on_flip(event,ax))
 
-        # Listen for all key press events
-        #fig.canvas.mpl_connect('key_release_event', on_flip)
+            confirm_button = Button(si_ax, 'Yes')
+            confirm_button.on_clicked(lambda event: confirm_close(event,fig))
+
+            print(f'Confirmed selection.')
+            #imshow_click.set_clim(editor.min_val, editor.max_val/2)
+            plt.colorbar(imshow_click)
+
+            # Listen for all key press events
+            #fig.canvas.mpl_connect('key_release_event', on_flip)
+            plt.show()
+            g = input('Approve? (Yes/No)')
+            confirmed = False
+            while confirmed == False :
+                try:
+                    if g.lower() == 'yes':
+                        Approve = True
+                        confirmed = True
+                        coordinates_final = []
+                        for item in coordinates:
+                            coordinates_final.append(item)
+                        print(coordinates_final)
+                        print()
+                        print(coordinates)
+                    else:
+                        h = input('Are you sure you want to discard? (Yes/No)')
+                        if h.lower() == 'yes':
+                            confirmed = True
+                            Approve = False
+                            redux = True
+                        else:
+                            g = 'Yes'
+                        Approve = False
+                        confirmed = True
+                except:
+                    print('Incorrect input')
+                finally:
+                    pass
+        timestr = time.strftime("%Y%m%d-%H%M%S")
+        with open('points_SAMURAI_{0}.txt'.format(timestr),'w') as wt:
+            wt.write('{0}, {1}\n'.format(sum(yn),len(yn)-sum(yn)))
+            for c in coordinates_final:
+                wt.write('{0}, {1}\n'.format(c[0],c[1]))
+            wt.write('#slice: {0}'.format(editor.slices[n]))
+
+        times_taken = np.append(times_taken, time.time() - start_time)
+        print(times_taken)
+
+
+#         coordinates_final = [(55.85183633570725, 65.17225247870404),
+# (57.7065004887585, 62.57572266443229),
+# (51.3264558022622, 66.80435693338913),
+# (53.733766233766175, 111.6385281385281),
+# (109.14502164502159, 72.85064935064932),
+# (97.02380952380946, 162.89393939393935),
+# (49.25368314481211, 73.9151829353442)]
+#         yn = [3,4]
+
+
+        # Let's add a positive click at (x, y)
+        points = np.array(coordinates_final, dtype=np.float32)
+
+        print(yn)
+        # for labels, `1` means positive click and `0` means negative click
+        #np.array(np.append(np.ones((1,int(yn[0]))),np.zeros((1,int(yn[1])))), np.int32)
+
+        start_time = time.time()
+        scores, out_obj_ids, out_mask_logits = video_predictor.add_new_points_or_box(
+            inference_state=inference_state,
+            frame_idx=ann_frame_idx,
+            obj_id=ann_obj_id,
+            points=points,
+            labels=yn
+        )
+
+        masks = out_mask_logits
+        if n == 0:
+            slice_2d = image_data[slices[n],:,:]
+        if n == 1:
+            slice_2d = image_data[:,slices[n],:]
+        if n == 2:
+            slice_2d = image_data[:,:,slices[n]]
+                    # Display the results
+        fig, ax = plt.subplots(1, len(out_mask_logits), figsize=(20, 10))
+        for i in range(len(out_mask_logits)):
+
+
+            # Calculate gradient
+            #gradient_x, gradient_y = np.gradient(out_mask_logits[i].cpu())
+
+            # Calculate magnitude
+            #magnitude = np.sqrt(gradient_x**2 + gradient_y**2)
+
+
+            print(out_mask_logits[i][0].shape)
+            print(i)
+
+            ax.imshow(slice_2d, cmap="gray")
+            im = ax.imshow((out_mask_logits[i][0].cpu().numpy()), alpha=0.2, cmap="viridis")#out_mask_logits[0][i].cpu().numpy()
+            ax.set_title(f"Mask {i}")
+            #ax[i].axis("off")
+            fig.colorbar(im, ax=ax)
+        times_taken = np.append(times_taken, time.time() - start_time)
+        print(times_taken)
+
         plt.show()
+
+
+        # fig, ax = plt.subplots(1, len(out_mask_logits[0]), figsize=(20, 10))
+        # for i in range(len(out_mask_logits[0])):
+        #
+        #     # Calculate gradient
+        #     gradient_x, gradient_y = np.gradient(out_mask_logits[0][i].cpu())
+        #
+        #     # Calculate magnitude
+        #     magnitude = np.sqrt(gradient_x**2 + gradient_y**2)
+        #
+        #     plt.figure(figsize=(9, 6))
+        #     plt.title(f"frame {ann_frame_idx}")
+        #     plt.imshow(Image.open(os.path.join(output_dir, frame_names[ann_frame_idx])))
+        #     show_points(points, labels, plt.gca())
+        #     show_mask((out_mask_logits[0][i].cpu().numpy()), plt.gca(), obj_id=out_obj_ids[0])
+        #
+        # plt.show()
+
         g = input('Approve? (Yes/No)')
         confirmed = False
-        while confirmed == False :
-            try:
-                if g == 'Yes':
-                    yn = [len(coordinates), len(coordinates_bg)]
-                    Approve = True
-                    confirmed = True
-                    coordinates_final = []
-                    for item in coordinates:
-                        coordinates_final.append(item)
-                    for item in coordinates_bg:
-                        coordinates_final.append(item)
-                    print(coordinates_final)
-                    print(coordinates_bg)
-                else:
-                    h = input('Are you sure you want to discard? (Yes/No)')
-                    if h == 'Yes':
-                        confirmed = True
-                    else:
-                        g = 'Yes'
-                    Approve = False
-            except:
-                print('Incorrect input')
-            finally:
-                pass
-
-    times_taken = np.append(times_taken, time.time() - start_time)
-    print(times_taken)
-
-    # Let's add a positive click at (x, y)
-    points = np.array(coordinates_final, dtype=np.float32)
-
-
-    print(yn)
-    # for labels, `1` means positive click and `0` means negative click
-    labels = np.array(np.append(np.ones((1,int(yn[0]))),np.zeros((1,int(yn[1])))), np.int32)
-
-    start_time = time.time()
-    scores, out_obj_ids, out_mask_logits = video_predictor.add_new_points_or_box(
-        inference_state=inference_state,
-        frame_idx=ann_frame_idx,
-        obj_id=ann_obj_id,
-        points=points,
-        labels=labels
-    )
-
-    masks = out_mask_logits
-    if n == 0:
-        slice_2d = image_data[slices[n],:,:]
-    if n == 1:
-        slice_2d = image_data[:,slices[n],:]
-    if n == 2:
-        slice_2d = image_data[:,:,slices[n]]
-                # Display the results
-    fig, ax = plt.subplots(1, len(out_mask_logits), figsize=(20, 10))
-    for i in range(len(out_mask_logits)):
-
-
-        # Calculate gradient
-        #gradient_x, gradient_y = np.gradient(out_mask_logits[i].cpu())
-
-        # Calculate magnitude
-        #magnitude = np.sqrt(gradient_x**2 + gradient_y**2)
-
-
-        print(out_mask_logits[i][0].shape)
-        print(i)
-
-        ax.imshow(slice_2d, cmap="gray")
-        im = ax.imshow((out_mask_logits[i][0].cpu().numpy()), alpha=0.2, cmap="viridis")#out_mask_logits[0][i].cpu().numpy()
-        ax.set_title(f"Mask {i}")
-        #ax[i].axis("off")
-        fig.colorbar(im, ax=ax)
-    times_taken = np.append(times_taken, time.time() - start_time)
-    print(times_taken)
-
-    plt.show()
-
-
-    # fig, ax = plt.subplots(1, len(out_mask_logits[0]), figsize=(20, 10))
-    # for i in range(len(out_mask_logits[0])):
-    #
-    #     # Calculate gradient
-    #     gradient_x, gradient_y = np.gradient(out_mask_logits[0][i].cpu())
-    #
-    #     # Calculate magnitude
-    #     magnitude = np.sqrt(gradient_x**2 + gradient_y**2)
-    #
-    #     plt.figure(figsize=(9, 6))
-    #     plt.title(f"frame {ann_frame_idx}")
-    #     plt.imshow(Image.open(os.path.join(output_dir, frame_names[ann_frame_idx])))
-    #     show_points(points, labels, plt.gca())
-    #     show_mask((out_mask_logits[0][i].cpu().numpy()), plt.gca(), obj_id=out_obj_ids[0])
-    #
-    # plt.show()
-
-
-
-    Approve = False
-    g = input('Approve? (Yes/No)')
-    confirmed = False
-    while confirmed == False:
-        if g == 'Yes':
-            Approve = True
-            confirmed = True
-        else:
-            h = input('Are you sure you want to discard? (Yes/No)')
-            if h == 'Yes':
+        while confirmed == False:
+            if g.lower() == 'yes':
+                Final_Approve = True
                 confirmed = True
+            else:
+                h = input('Are you sure you want to discard? (Yes/No)')
+                if h.lower() == 'yes':
+                    redux = True
+                    confirmed = True
+                    Approve = False
 
     start_time = time.time()
     # Now do the whole video
@@ -780,7 +817,7 @@ with open('01_1059_20241226.pkl','rb') as f:
     nifti_res = np.transpose(nifti_res)
 
     nifti_mask = nib.Nifti1Image(nifti_res, affine=nib.load(nifti_path).affine)
-import time
+
 timestr = time.strftime("%Y%m%d-%H%M%S")
 nib.save(nifti_mask,'output_SAMURAI_{0}.nii.gz'.format(timestr))
 times_taken = np.append(times_taken, time.time() - start_time)
@@ -1338,7 +1375,7 @@ if pickleIt:
 
         havearray = input('Did you preload an array of points? (Yes/No)')
         #frame_names = np.array(list(range(data.shape[2]))).astype(str)
-        if havearray == 'Yes':
+        if havearray.lower() == 'yes':
             coordinates = []
             first = True
             with open('preload_07_1064') as f:
@@ -1363,7 +1400,7 @@ if pickleIt:
             confirmed = False
             while confirmed == False:
                 try:
-                    if g == 'Yes':
+                    if g.lower() == 'yes':
                         yn = input('Please enter fg (1) or bg (0) list: ')
                         yn = yn.split(' ')
                         print(yn)
@@ -1371,7 +1408,7 @@ if pickleIt:
                         confirmed = True
                     else:
                         h = input('Are you sure you want to discard? (Yes/No)')
-                        if h == 'Yes':
+                        if h.lower() == 'yes':
                             confirmed = True
                         else:
                             g = 'Yes'
@@ -1446,12 +1483,12 @@ if pickleIt:
         g = input('Approve? (Yes/No)')
         confirmed = False
         while confirmed == False:
-            if g == 'Yes':
+            if g.lower() == 'yes':
                 Approve = True
                 confirmed = True
             else:
                 h = input('Are you sure you want to discard? (Yes/No)')
-                if h == 'Yes':
+                if h.lower() == 'yes':
                     confirmed = True
 
         # Now do the whole video
