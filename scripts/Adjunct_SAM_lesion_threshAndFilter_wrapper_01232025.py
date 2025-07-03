@@ -450,25 +450,35 @@ pickleIt = True
 mode = 1
 times_taken = np.array([])
 yn = []
+cbar = False
+
+subplot_title_dictionary = {
+    'foreground':'Selection: Foreground',
+    'background':'Selection: Background',
+    'prediction_likelihood_mask':'Prediction Likelihood Mask'
+    }
+
 if pickleIt:
     def on_flip(event, ax):
+        # Reset x and y axis limits to autoscale
         global mode
         mode = 1-mode
         if mode == 1:
-            ax[1].set_title('Foreground')
+            ax.set_title(subplot_title_dictionary['foreground'])
         else:
-            ax[1].set_title('Background')
-        plt.show()
+            ax.set_title(subplot_title_dictionary['background'])
+        plt.draw()
     # Define a callback function for mouse clicks
-    def on_click(event,ax):
+    def on_click(event,ax,init=False):
         global yn
         global mode
         global coordinates
+        global cbar
         toolbar = plt.get_current_fig_manager().toolbar
         if toolbar.mode:  # Ignore clicks when zoom or pan is active
             return
         # Store the coordinates of the click
-        if event.inaxes is ax[1]:
+        if event and event.inaxes is ax[1]:
             coordinates.append((event.xdata, event.ydata))
             print(f"Mouse clicked at: {event.xdata}, {event.ydata}")
             yn = np.append(yn,mode)
@@ -483,7 +493,7 @@ if pickleIt:
                 ax[1].plot(event.xdata, event.ydata, 'wo',markersize=10)#markerfacecolor='k',markeredgecolor='w',markeredgewidth=1,markersize=4)
                 ax[1].plot(event.xdata, event.ydata, 'ko', markersize=8)
             plt.draw()
-        if len(coordinates) > 0:
+        if len(coordinates) > 0 and ((event and event.inaxes is ax[1]) or init):
             points = np.array(coordinates, dtype=np.float32)
             scores, out_obj_ids, out_mask_logits = video_predictor.add_new_points_or_box(
                 inference_state=inference_state,
@@ -517,9 +527,12 @@ if pickleIt:
 
                 ax[0].imshow(slice_2d, cmap="gray")
                 im = ax[0].imshow((out_mask_logits[i][0].cpu().numpy()), alpha=0.5, cmap="viridis")#out_mask_logits[0][i].cpu().numpy()
-                ax[0].set_title(f"Mask {i}")
+                ax[0].set_title(subplot_title_dictionary['prediction_likelihood_mask'])
                 #ax[i].axis("off")
-                #fig.colorbar(im, ax=ax[0])
+                if cbar:
+                    cbar.remove()
+                cbar = fig.colorbar(im, ax=ax[0])
+                plt.show()
     start_time = time.time()
     editor = MultiViewMaskEditor(image_data,np.zeros(image_data.shape),False)
 
@@ -610,7 +623,7 @@ if pickleIt:
             slice_data = data[:, editor.slices[1], :]
         if n == 2:
             slice_data = data[:, :, editor.slices[2]]
-        imshow_click = plt.imshow(slice_data, vmin=editor.min_val, vmax=editor.max_val/2)#clim=(editor.min_val, editor.max_val),vmin=editor.min_val,vmax=editor.max_val,cmap='viridis')
+        #imshow_click = plt.imshow(slice_data, vmin=editor.min_val, vmax=editor.max_val/2)#clim=(editor.min_val, editor.max_val),vmin=editor.min_val,vmax=editor.max_val,cmap='viridis')
 
         #imshow_click.set_clim(editor.min_val, editor.max_val)
         #plt.show()
@@ -627,17 +640,18 @@ if pickleIt:
         plt.close(fig)
     Final_Approve = False
     redux = False
+    coordinates_orig = np.copy(coordinates)
+    yn_orig = np.copy(yn)
     while Final_Approve == False:
         print(redux)
         if redux:
-            yn = []
-            coordinates = coordinates[0,yn[0]]
-            xs = []
-            ys = []
-        fig, ax = plt.subplots(1,2)
-        fig.canvas.mpl_connect('button_press_event',lambda event: on_click(event,[ax[0],ax[1]]))
+            plt.close()
+            coordinates = coordinates_orig.tolist()
+            yn = yn_orig
+        fig0, ax0 = plt.subplots()
+        fig, ax = plt.subplots()
+        fig.canvas.mpl_connect('button_press_event',lambda event: on_click(event,[ax0,ax]))
         mode = 1
-        ax[1].set_title('Foreground')
         flip_ax = plt.axes([0.65, 0.01, 0.3, 0.05])
         si_ax = plt.axes([0.2, 0.01, 0.1, 0.05])
         print(editor.min_val)
@@ -649,16 +663,17 @@ if pickleIt:
             slice_data = data[:, editor.slices[1], :]
         if n == 2:
             slice_data = data[:, :, editor.slices[2]]
-        imshow_click = ax[1].imshow(slice_data, vmin=editor.min_val*np.max(slice_data)/np.max(image_data), vmax=editor.max_val*np.max(slice_data)/np.max(image_data))#,clim=(editor.min_val, editor.max_val),vmin=editor.min_val,vmax=editor.max_val,cmap='viridis')
+        imshow_click = ax.imshow(slice_data, vmin=editor.min_val*np.max(slice_data)/np.max(image_data), vmax=editor.max_val*np.max(slice_data)/np.max(image_data))#,clim=(editor.min_val, editor.max_val),vmin=editor.min_val,vmax=editor.max_val,cmap='viridis')
         out = 0
         for c in coordinates:
             if out < yn[0]:
-                ax[1].scatter(c[0],c[1],c='r')
+                ax.scatter(c[0],c[1],c='r')
             else:
-                ax[1].scatter(c[0],c[1],c='b')
+                ax.scatter(c[0],c[1],c='b')
             out += 1
         flip_button = Button(flip_ax, '(Click to switch fg/bg)')
         flip_button.on_clicked(lambda event: on_flip(event,ax))
+        ax.set_title('Foreground')
 
         confirm_button = Button(si_ax, 'Yes')
         confirm_button.on_clicked(lambda event: confirm_close(event,fig))
@@ -666,6 +681,7 @@ if pickleIt:
         print(f'Confirmed selection.')
         #imshow_click.set_clim(editor.min_val, editor.max_val/2)
         plt.colorbar(imshow_click)
+        on_click(None,[ax0,ax],True)
 
         # Listen for all key press events
         #fig.canvas.mpl_connect('key_release_event', on_flip)
@@ -706,6 +722,7 @@ if pickleIt:
         answer = input('Approve? (Yes/No)')
         if answer.lower() == 'yes' or answer.lower() == 'y':
             Final_Approve = True
+        redux = True
     timestr = time.strftime("%Y%m%d-%H%M%S")
     with open('points_SAMURAI_{0}.txt'.format(timestr),'w') as wt:
         wt.write('{0}, {1}\n'.format(sum(yn),len(yn)-sum(yn)))
