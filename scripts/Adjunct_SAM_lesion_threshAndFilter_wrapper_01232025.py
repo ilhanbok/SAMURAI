@@ -129,6 +129,9 @@ import torch
 
 import matplotlib.pyplot as plt
 
+import matplotlib
+matplotlib.use("Qt5agg")
+
 from sam2.build_sam import build_sam2, build_sam2_video_predictor
 from sam2.sam2_image_predictor import SAM2ImagePredictor
 
@@ -458,52 +461,44 @@ subplot_title_dictionary = {
     'prediction_likelihood_mask':'Prediction Likelihood Mask'
     }
 
+out_mask_logits = []
 if pickleIt:
-    def on_flip(event, ax):
-        # Reset x and y axis limits to autoscale
-        global mode
-        mode = 1-mode
-        if mode == 1:
-            ax.set_title(subplot_title_dictionary['foreground'])
-        else:
-            ax.set_title(subplot_title_dictionary['background'])
-        plt.draw()
     # Define a callback function for mouse clicks
-    def on_click(event,ax,init=False):
+    def on_click(event,ax1,init=False,refresh_view = True):
         global yn
         global mode
         global coordinates
         global cbar
+        global out_mask_logits
         toolbar = plt.get_current_fig_manager().toolbar
         if toolbar.mode:  # Ignore clicks when zoom or pan is active
             return
         # Store the coordinates of the click
-        if event and event.inaxes is ax[1]:
+        if event and event.inaxes is ax1:
             coordinates.append((event.xdata, event.ydata))
             print(f"Mouse clicked at: {event.xdata}, {event.ydata}")
             yn = np.append(yn,mode)
             if mode == 1:
                 # Optionally, plot the point where clicked
-                ax[1].plot(event.xdata, event.ydata, 'ko',markersize=10)#markerfacecolor='w',markeredgecolor='k',markeredgewidth=1,markersize=5)
-                ax[1].plot(event.xdata, event.ydata, 'wo', markersize=8)
-                ax[1].plot(event.xdata, event.ydata, 'ko', markersize=6)
-                #ax[1].plot(event.xdata, event.ydata, markerfacecolor='k',markersize=3.5)
+                ax1.plot(event.xdata, event.ydata, 'ko',markersize=10)#markerfacecolor='w',markeredgecolor='k',markeredgewidth=1,markersize=5)
+                ax1.plot(event.xdata, event.ydata, 'wo', markersize=8)
+                ax1.plot(event.xdata, event.ydata, 'ko', markersize=6)
+                #ax1.plot(event.xdata, event.ydata, markerfacecolor='k',markersize=3.5)
             else:
                 # Optionally, plot the point where clicked
-                ax[1].plot(event.xdata, event.ydata, 'wo',markersize=10)#markerfacecolor='k',markeredgecolor='w',markeredgewidth=1,markersize=4)
-                ax[1].plot(event.xdata, event.ydata, 'ko', markersize=8)
+                ax1.plot(event.xdata, event.ydata, 'wo',markersize=10)#markerfacecolor='k',markeredgecolor='w',markeredgewidth=1,markersize=4)
+                ax1.plot(event.xdata, event.ydata, 'ko', markersize=8)
             plt.draw()
-        if len(coordinates) > 0 and ((event and event.inaxes is ax[1]) or init):
-            points = np.array(coordinates, dtype=np.float32)
-            scores, out_obj_ids, out_mask_logits = video_predictor.add_new_points_or_box(
-                inference_state=inference_state,
-                frame_idx=ann_frame_idx,
-                obj_id=ann_obj_id,
-                points=points,
-                labels=yn
-            )
-
-            masks = out_mask_logits
+        if len(coordinates) > 0 and ((event and event.inaxes is ax1) or init):
+            if not refresh_view:
+                points = np.array(coordinates, dtype=np.float32)
+                scores, out_obj_ids, out_mask_logits = video_predictor.add_new_points_or_box(
+                    inference_state=inference_state,
+                    frame_idx=ann_frame_idx,
+                    obj_id=ann_obj_id,
+                    points=points,
+                    labels=yn
+                )
             if n == 0:
                 slice_2d = image_data[slices[n],:,:]
             if n == 1:
@@ -524,15 +519,32 @@ if pickleIt:
 
                 print(out_mask_logits[i][0].shape)
                 print(i)
-
-                ax[0].imshow(slice_2d, cmap="gray")
-                im = ax[0].imshow((out_mask_logits[i][0].cpu().numpy()), alpha=0.5, cmap="viridis")#out_mask_logits[0][i].cpu().numpy()
-                ax[0].set_title(subplot_title_dictionary['prediction_likelihood_mask'])
+                axlims = ax1.get_xlim()
+                aylims = ax1.get_ylim()
+                print(axlims)
+                print(aylims)
+                plt.close(2)
+                fig, ax0 = plt.subplots(num=2)
+                ax0.imshow(slice_2d, cmap="gray")
+                im = ax0.imshow((out_mask_logits[i][0].cpu().numpy()), alpha=0.5, cmap="viridis")#out_mask_logits[0][i].cpu().numpy()
+                ax0.set_title(subplot_title_dictionary['prediction_likelihood_mask'])
+                ax0.set_xlim(axlims[0],axlims[1])
+                ax0.set_ylim(aylims[0],aylims[1])
                 #ax[i].axis("off")
                 if cbar:
                     cbar.remove()
-                cbar = fig.colorbar(im, ax=ax[0])
+                cbar = fig.colorbar(im, ax=ax0)
                 plt.show()
+    def on_flip(event, ax):
+        # Reset x and y axis limits to autoscale
+        global mode
+        mode = 1-mode
+        if mode == 1:
+            ax.set_title(subplot_title_dictionary['foreground'])
+        else:
+            ax.set_title(subplot_title_dictionary['background'])
+        plt.draw()
+        on_click(event,ax)
     start_time = time.time()
     editor = MultiViewMaskEditor(image_data,np.zeros(image_data.shape),False)
 
@@ -638,6 +650,8 @@ if pickleIt:
     start_time = time.time()
     def confirm_close(event, fig):
         plt.close(fig)
+        plt.close(fig(1))
+        plt.close(fig(2))
     Final_Approve = False
     redux = False
     coordinates_orig = np.copy(coordinates)
@@ -648,9 +662,8 @@ if pickleIt:
             plt.close()
             coordinates = coordinates_orig.tolist()
             yn = yn_orig
-        fig0, ax0 = plt.subplots()
-        fig, ax = plt.subplots()
-        fig.canvas.mpl_connect('button_press_event',lambda event: on_click(event,[ax0,ax]))
+        fig, ax = plt.subplots(num=1)
+        fig.canvas.mpl_connect('button_press_event',lambda event: on_click(event,ax,refresh_view=False))
         mode = 1
         flip_ax = plt.axes([0.65, 0.01, 0.3, 0.05])
         si_ax = plt.axes([0.2, 0.01, 0.1, 0.05])
@@ -677,11 +690,11 @@ if pickleIt:
 
         confirm_button = Button(si_ax, 'Yes')
         confirm_button.on_clicked(lambda event: confirm_close(event,fig))
-
+        fig0, ax0 = plt.subplots(num=2)
         print(f'Confirmed selection.')
         #imshow_click.set_clim(editor.min_val, editor.max_val/2)
         plt.colorbar(imshow_click)
-        on_click(None,[ax0,ax],True)
+        on_click(None,ax,True,False)
 
         # Listen for all key press events
         #fig.canvas.mpl_connect('key_release_event', on_flip)
