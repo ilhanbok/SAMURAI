@@ -462,35 +462,75 @@ subplot_title_dictionary = {
     }
 
 out_mask_logits = []
+redo_cache = []
+yn_cache = []
 if pickleIt:
+    def undo(event, ax):
+        global coordinates
+        global redo_cache
+        global yn_cache
+        global yn
+        print(coordinates)
+        print(redo_cache)
+        print(yn_cache)
+        print(yn)
+        if len(coordinates) > 0:
+            redo_cache.append(coordinates.pop())
+            yn_cache.append(yn[-1])
+            yn = np.delete(yn,-1)
+            on_click(event,ax,True,False,True)
+    def redo(event, ax):
+        global coordinates
+        global redo_cache
+        global yn_cache
+        global yn
+        if len(redo_cache) > 0:
+            coordinates.append(redo_cache.pop(0))
+            yn = np.append(yn,yn_cache.pop(0))
+            on_click(event,ax,True,False,True)
     # Define a callback function for mouse clicks
-    def on_click(event,ax1,init=False,refresh_view = True):
+    def on_click(event,ax1,init=False,refresh_view = True,ur = False):
         global yn
         global mode
         global coordinates
         global cbar
         global out_mask_logits
+        global redo_cache
+        global title
         toolbar = plt.get_current_fig_manager().toolbar
         if toolbar.mode:  # Ignore clicks when zoom or pan is active
             return
+        ax1.clear()
+        imshow_click = ax1.imshow(slice_data, vmin=editor.min_val*np.max(slice_data)/np.max(image_data), vmax=editor.max_val*np.max(slice_data)/np.max(image_data))#,clim=(editor.min_val, editor.max_val),vmin=editor.min_val,vmax=editor.max_val,cmap='viridis')
         # Store the coordinates of the click
         if event and event.inaxes is ax1:
+            redo_cache = []
+            yn_cache = []
             coordinates.append((event.xdata, event.ydata))
             print(f"Mouse clicked at: {event.xdata}, {event.ydata}")
             yn = np.append(yn,mode)
-            if mode == 1:
-                # Optionally, plot the point where clicked
-                ax1.plot(event.xdata, event.ydata, 'ko',markersize=10)#markerfacecolor='w',markeredgecolor='k',markeredgewidth=1,markersize=5)
-                ax1.plot(event.xdata, event.ydata, 'wo', markersize=8)
-                ax1.plot(event.xdata, event.ydata, 'ko', markersize=6)
-                #ax1.plot(event.xdata, event.ydata, markerfacecolor='k',markersize=3.5)
-            else:
-                # Optionally, plot the point where clicked
-                ax1.plot(event.xdata, event.ydata, 'wo',markersize=10)#markerfacecolor='k',markeredgecolor='w',markeredgewidth=1,markersize=4)
-                ax1.plot(event.xdata, event.ydata, 'ko', markersize=8)
-            plt.draw()
-        if len(coordinates) > 0 and ((event and event.inaxes is ax1) or init):
-            if not refresh_view:
+        ax1.set_title(title)
+        if len(coordinates) > 0:
+            for pos in range(len(coordinates)):
+                # print('1')
+                # print(coordinates)
+                # print(yn)
+                # print(pos)
+                # print('done.')
+                print((coordinates[pos][0],coordinates[pos][1]))
+                if yn[pos] == 1:
+                    # Optionally, plot the point where clicked
+                    ax1.plot(coordinates[pos][0],coordinates[pos][1], 'ko',markersize=10)#markerfacecolor='w',markeredgecolor='k',markeredgewidth=1,markersize=5)
+                    ax1.plot(coordinates[pos][0],coordinates[pos][1], 'wo', markersize=8)
+                    ax1.plot(coordinates[pos][0],coordinates[pos][1], 'ko', markersize=6)
+                    #ax1.plot(event.xdata, event.ydata, markerfacecolor='k',markersize=3.5)
+                else:
+                    # Optionally, plot the point where clicked
+                    ax1.plot(coordinates[pos][0],coordinates[pos][1], 'wo',markersize=10)#markerfacecolor='k',markeredgecolor='w',markeredgewidth=1,markersize=4)
+                    ax1.plot(coordinates[pos][0],coordinates[pos][1], 'ko', markersize=8)
+        plt.draw()
+        if (len(coordinates) > 0 and ((event and event.inaxes is ax1) or init)) or ur:
+            if not refresh_view or ur:
                 points = np.array(coordinates, dtype=np.float32)
                 scores, out_obj_ids, out_mask_logits = video_predictor.add_new_points_or_box(
                     inference_state=inference_state,
@@ -538,13 +578,13 @@ if pickleIt:
     def on_flip(event, ax):
         # Reset x and y axis limits to autoscale
         global mode
+        global title
         mode = 1-mode
         if mode == 1:
-            ax.set_title(subplot_title_dictionary['foreground'])
+            title = subplot_title_dictionary['foreground']
         else:
-            ax.set_title(subplot_title_dictionary['background'])
-        plt.draw()
-        on_click(event,ax)
+            title = subplot_title_dictionary['background']
+        on_click(event=event,ax1=ax)
     start_time = time.time()
     editor = MultiViewMaskEditor(image_data,np.zeros(image_data.shape),False)
 
@@ -667,6 +707,8 @@ if pickleIt:
         mode = 1
         flip_ax = plt.axes([0.65, 0.01, 0.3, 0.05])
         si_ax = plt.axes([0.2, 0.01, 0.1, 0.05])
+        undo_ax = plt.axes([0.4, 0.01, 0.05, 0.05])
+        redo_ax = plt.axes([0.45, 0.01, 0.05, 0.05])
         print(editor.min_val)
         print(editor.max_val)
         print('slice: {0}'.format(editor.slices[n]))
@@ -676,7 +718,6 @@ if pickleIt:
             slice_data = data[:, editor.slices[1], :]
         if n == 2:
             slice_data = data[:, :, editor.slices[2]]
-        imshow_click = ax.imshow(slice_data, vmin=editor.min_val*np.max(slice_data)/np.max(image_data), vmax=editor.max_val*np.max(slice_data)/np.max(image_data))#,clim=(editor.min_val, editor.max_val),vmin=editor.min_val,vmax=editor.max_val,cmap='viridis')
         out = 0
         for c in coordinates:
             if out < yn[0]:
@@ -686,14 +727,20 @@ if pickleIt:
             out += 1
         flip_button = Button(flip_ax, '(Click to switch fg/bg)')
         flip_button.on_clicked(lambda event: on_flip(event,ax))
-        ax.set_title('Foreground')
+
+        undo_button = Button(undo_ax, '<-')
+        undo_button.on_clicked(lambda event: undo(event,ax))
+
+        redo_button = Button(redo_ax, '->')
+        redo_button.on_clicked(lambda event: redo(event,ax))
+
+        title = 'Selection: Foreground'
 
         confirm_button = Button(si_ax, 'Yes')
         confirm_button.on_clicked(lambda event: confirm_close(event,fig))
         fig0, ax0 = plt.subplots(num=2)
         print(f'Confirmed selection.')
         #imshow_click.set_clim(editor.min_val, editor.max_val/2)
-        plt.colorbar(imshow_click)
         on_click(None,ax,True,False)
 
         # Listen for all key press events
