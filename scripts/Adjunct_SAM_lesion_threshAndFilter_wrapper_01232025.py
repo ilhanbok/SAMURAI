@@ -485,8 +485,8 @@ if pickleIt:
         global yn_cache
         global yn
         if len(redo_cache) > 0:
-            coordinates.append(redo_cache.pop(0))
-            yn = np.append(yn,yn_cache.pop(0))
+            coordinates.append(redo_cache.pop())
+            yn = np.append(yn,yn_cache.pop())
             on_click(event,ax,True,False,True)
     # Define a callback function for mouse clicks
     def on_click(event,ax1,init=False,refresh_view = True,ur = False):
@@ -513,10 +513,10 @@ if pickleIt:
         if len(coordinates) > 0:
             for pos in range(len(coordinates)):
                 # print('1')
-                # print(coordinates)
+                print(coordinates)
                 # print(yn)
                 # print(pos)
-                # print('done.')
+                print('done.')
                 print((coordinates[pos][0],coordinates[pos][1]))
                 if yn[pos] == 1:
                     # Optionally, plot the point where clicked
