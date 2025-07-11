@@ -470,111 +470,127 @@ if pickleIt:
         global redo_cache
         global yn_cache
         global yn
+        print('undo:')
         print(coordinates)
         print(redo_cache)
         print(yn_cache)
         print(yn)
+        print('undo out')
         if len(coordinates) > 0:
             redo_cache.append(coordinates.pop())
             yn_cache.append(yn[-1])
             yn = np.delete(yn,-1)
-            on_click(event,ax,True,False,True)
+            on_click(event,ax,True,False,True,intentional=True)
     def redo(event, ax):
         global coordinates
         global redo_cache
         global yn_cache
         global yn
+        print('redo:')
+        print(coordinates)
+        print(redo_cache)
+        print(yn_cache)
+        print(yn)
+        print('redo out')
         if len(redo_cache) > 0:
             coordinates.append(redo_cache.pop())
             yn = np.append(yn,yn_cache.pop())
-            on_click(event,ax,True,False,True)
+            on_click(event,ax,True,False,True,intentional=True)
     # Define a callback function for mouse clicks
-    def on_click(event,ax1,init=False,refresh_view = True,ur = False):
-        global yn
-        global mode
-        global coordinates
-        global cbar
-        global out_mask_logits
-        global redo_cache
-        global title
-        toolbar = plt.get_current_fig_manager().toolbar
-        if toolbar.mode:  # Ignore clicks when zoom or pan is active
-            return
-        ax1.clear()
-        imshow_click = ax1.imshow(slice_data, vmin=editor.min_val*np.max(slice_data)/np.max(image_data), vmax=editor.max_val*np.max(slice_data)/np.max(image_data))#,clim=(editor.min_val, editor.max_val),vmin=editor.min_val,vmax=editor.max_val,cmap='viridis')
-        # Store the coordinates of the click
-        if event and event.inaxes is ax1:
-            redo_cache = []
-            yn_cache = []
-            coordinates.append((event.xdata, event.ydata))
-            print(f"Mouse clicked at: {event.xdata}, {event.ydata}")
-            yn = np.append(yn,mode)
-        ax1.set_title(title)
-        if len(coordinates) > 0:
-            for pos in range(len(coordinates)):
-                # print('1')
-                print(coordinates)
-                # print(yn)
-                # print(pos)
-                print('done.')
-                print((coordinates[pos][0],coordinates[pos][1]))
-                if yn[pos] == 1:
-                    # Optionally, plot the point where clicked
-                    ax1.plot(coordinates[pos][0],coordinates[pos][1], 'ko',markersize=10)#markerfacecolor='w',markeredgecolor='k',markeredgewidth=1,markersize=5)
-                    ax1.plot(coordinates[pos][0],coordinates[pos][1], 'wo', markersize=8)
-                    ax1.plot(coordinates[pos][0],coordinates[pos][1], 'ko', markersize=6)
-                    #ax1.plot(event.xdata, event.ydata, markerfacecolor='k',markersize=3.5)
-                else:
-                    # Optionally, plot the point where clicked
-                    ax1.plot(coordinates[pos][0],coordinates[pos][1], 'wo',markersize=10)#markerfacecolor='k',markeredgecolor='w',markeredgewidth=1,markersize=4)
-                    ax1.plot(coordinates[pos][0],coordinates[pos][1], 'ko', markersize=8)
-        plt.draw()
-        if (len(coordinates) > 0 and ((event and event.inaxes is ax1) or init)) or ur:
-            if not refresh_view or ur:
-                points = np.array(coordinates, dtype=np.float32)
-                scores, out_obj_ids, out_mask_logits = video_predictor.add_new_points_or_box(
-                    inference_state=inference_state,
-                    frame_idx=ann_frame_idx,
-                    obj_id=ann_obj_id,
-                    points=points,
-                    labels=yn
-                )
-            if n == 0:
-                slice_2d = image_data[slices[n],:,:]
-            if n == 1:
-                slice_2d = image_data[:,slices[n],:]
-            if n == 2:
-                slice_2d = image_data[:,:,slices[n]]
-                        # Display the results
-            #fig, ax = plt.subplots(1, len(out_mask_logits), figsize=(20, 10))
-            for i in range(len(out_mask_logits)):
+    def on_click(event,ax1,init=False,refresh_view = True,ur = False,intentional=False):
+            print('onclick called')
+            global yn
+            global mode
+            global coordinates
+            global cbar
+            global out_mask_logits
+            global redo_cache
+            global title
+
+            toolbar = plt.get_current_fig_manager().toolbar
+            if toolbar.mode:  # Ignore clicks when zoom or pan is active
+                return
+            # Store the coordinates of the click
+            if event and event.inaxes is ax1:
+                intentional = True
+                redo_cache = []
+                yn_cache = []
+                coordinates.append((event.xdata, event.ydata))
+                print(f"Mouse clicked at: {event.xdata}, {event.ydata}")
+                yn = np.append(yn,mode)
+            if intentional:
+                ax1.clear()
+                imshow_click = ax1.imshow(slice_data, vmin=editor.min_val*np.max(slice_data)/np.max(image_data), vmax=editor.max_val*np.max(slice_data)/np.max(image_data))#,clim=(editor.min_val, editor.max_val),vmin=editor.min_val,vmax=editor.max_val,cmap='viridis')
+                ax1.set_title(title)
+                if len(coordinates) > 0:
+                    print('1')
+                    print(coordinates)
+                    print(yn)
+                    for pos in range(len(coordinates)):
+                        print('done.')
+                        print((coordinates[pos][0],coordinates[pos][1]))
+                        if yn[pos] == 1:
+                            # Optionally, plot the point where clicked
+                            ax1.plot(coordinates[pos][0],coordinates[pos][1], 'ko',markersize=10)#markerfacecolor='w',markeredgecolor='k',markeredgewidth=1,markersize=5)
+                            ax1.plot(coordinates[pos][0],coordinates[pos][1], 'wo', markersize=8)
+                            ax1.plot(coordinates[pos][0],coordinates[pos][1], 'ko', markersize=6)
+                            #ax1.plot(event.xdata, event.ydata, markerfacecolor='k',markersize=3.5)
+                        else:
+                            # Optionally, plot the point where clicked
+                            ax1.plot(coordinates[pos][0],coordinates[pos][1], 'wo',markersize=10)#markerfacecolor='k',markeredgecolor='w',markeredgewidth=1,markersize=4)
+                            ax1.plot(coordinates[pos][0],coordinates[pos][1], 'ko', markersize=8)
+                plt.draw()
+                if (len(coordinates) > 0 and ((event and event.inaxes is ax1) or init)) or ur:
+                    if len(coordinates) > 0:
+                        if not refresh_view or ur:
+                            points = np.array(coordinates, dtype=np.float32)
+                            scores, out_obj_ids, out_mask_logits = video_predictor.add_new_points_or_box(
+                                inference_state=inference_state,
+                                frame_idx=ann_frame_idx,
+                                obj_id=ann_obj_id,
+                                points=points,
+                                labels=yn
+                            )
+                        if n == 0:
+                            slice_2d = image_data[slices[n],:,:]
+                        if n == 1:
+                            slice_2d = image_data[:,slices[n],:]
+                        if n == 2:
+                            slice_2d = image_data[:,:,slices[n]]
+                                    # Display the results
+                        #fig, ax = plt.subplots(1, len(out_mask_logits), figsize=(20, 10))
+                        for i in range(len(out_mask_logits)):
 
 
-                # Calculate gradient
-                #gradient_x, gradient_y = np.gradient(out_mask_logits[i].cpu())
+                            # Calculate gradient
+                            #gradient_x, gradient_y = np.gradient(out_mask_logits[i].cpu())
 
-                # Calculate magnitude
-                #magnitude = np.sqrt(gradient_x**2 + gradient_y**2)
+                            # Calculate magnitude
+                            #magnitude = np.sqrt(gradient_x**2 + gradient_y**2)
 
 
-                print(out_mask_logits[i][0].shape)
-                print(i)
-                axlims = ax1.get_xlim()
-                aylims = ax1.get_ylim()
-                print(axlims)
-                print(aylims)
-                plt.close(2)
-                fig, ax0 = plt.subplots(num=2)
-                ax0.imshow(slice_2d, cmap="gray")
-                im = ax0.imshow((out_mask_logits[i][0].cpu().numpy()), alpha=0.5, cmap="viridis")#out_mask_logits[0][i].cpu().numpy()
-                ax0.set_title(subplot_title_dictionary['prediction_likelihood_mask'])
-                ax0.set_xlim(axlims[0],axlims[1])
-                ax0.set_ylim(aylims[0],aylims[1])
-                #ax[i].axis("off")
-                if cbar:
-                    cbar.remove()
-                cbar = fig.colorbar(im, ax=ax0)
+                            print(out_mask_logits[i][0].shape)
+                            print(i)
+                            axlims = ax1.get_xlim()
+                            aylims = ax1.get_ylim()
+                            print(axlims)
+                            print(aylims)
+                            plt.close(2)
+                            fig, ax0 = plt.subplots(num=2)
+                            ax0.imshow(slice_2d, cmap="gray")
+                            im = ax0.imshow((out_mask_logits[i][0].cpu().numpy()), alpha=0.5, cmap="viridis")#out_mask_logits[0][i].cpu().numpy()
+                            ax0.set_title(subplot_title_dictionary['prediction_likelihood_mask'])
+                            ax0.set_xlim(axlims[0],axlims[1])
+                            ax0.set_ylim(aylims[0],aylims[1])
+                            #ax[i].axis("off")
+                            if cbar:
+                                cbar.remove()
+                            cbar = fig.colorbar(im, ax=ax0)
                 plt.show()
+                if len(coordinates) == 0:
+                    plt.close(2)
+                    fig, ax0 = plt.subplots(num=2)
+                    plt.show()
     def on_flip(event, ax):
         # Reset x and y axis limits to autoscale
         global mode
@@ -584,7 +600,7 @@ if pickleIt:
             title = subplot_title_dictionary['foreground']
         else:
             title = subplot_title_dictionary['background']
-        on_click(event=event,ax1=ax)
+        on_click(event=event,ax1=ax,intentional=True)
     start_time = time.time()
     editor = MultiViewMaskEditor(image_data,np.zeros(image_data.shape),False)
 
@@ -741,7 +757,7 @@ if pickleIt:
         fig0, ax0 = plt.subplots(num=2)
         print(f'Confirmed selection.')
         #imshow_click.set_clim(editor.min_val, editor.max_val/2)
-        on_click(None,ax,True,False)
+        on_click(None,ax,True,False,intentional=True)
 
         # Listen for all key press events
         #fig.canvas.mpl_connect('key_release_event', on_flip)
