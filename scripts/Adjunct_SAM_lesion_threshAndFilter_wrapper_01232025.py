@@ -322,14 +322,17 @@ class MaskEditor:
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button, Slider
-
+import json
 class MultiViewMaskEditor:
-    def __init__(self, volume, mask, toggle, min_val=0, max_val=0):
+    def __init__(self, volume, mask, toggle, min_val=0, max_val=0,config_file='config.0'):
         self.volume = volume
         self.mask = mask
         self.slices = [121, volume.shape[1] // 2, 43]#volume.shape[2] // 2]
         self.toggle = toggle
         self.orientations = ['Axial','Coronal','Sagittal']
+
+        with open(config_file,'r') as f:
+            config = json.load(f)
 
         if min_val == 0 and max_val == 0:
             self.min_val = np.min(self.volume)
@@ -337,6 +340,8 @@ class MultiViewMaskEditor:
         else:
             self.min_val = min_val
             self.max_val = max_val
+
+        self.thresh = config['threshold'] if 'threshold' in config else np.min(self.mask)
 
         self.fig, self.axes = plt.subplots(1, 3, figsize=(12, 4))
         plt.subplots_adjust(left=0.1, bottom=0.3)  # Adjust layout for sliders
@@ -350,9 +355,9 @@ class MultiViewMaskEditor:
 
         if self.toggle:
             self.masks = [
-                self.axes[0].imshow(self.mask[self.slices[0], :, :], clim=(0, 1), cmap='cool', alpha=0.5),
-                self.axes[1].imshow(self.mask[:, self.slices[1], :], clim=(0, 1), cmap='cool', alpha=0.5),
-                self.axes[2].imshow(self.mask[:, :, self.slices[2]], clim=(0, 1), cmap='cool', alpha=0.5)
+                self.axes[0].imshow(self.mask[self.slices[0], :, :] > self.thresh, clim=(0, 1), cmap='cool', alpha=0.5),
+                self.axes[1].imshow(self.mask[:, self.slices[1], :] > self.thresh, clim=(0, 1), cmap='cool', alpha=0.5),
+                self.axes[2].imshow(self.mask[:, :, self.slices[2]] > self.thresh, clim=(0, 1), cmap='cool', alpha=0.5)
             ]
 
         self.buttons = []
@@ -364,14 +369,17 @@ class MultiViewMaskEditor:
             self.buttons.append(button)
 
         # Brightness sliders
-        ax_min = plt.axes([0.1, 0.15, 0.35, 0.03])
-        ax_max = plt.axes([0.55, 0.15, 0.35, 0.03])
+        ax_min = plt.axes([0.1, 0.3, 0.35, 0.03])
+        ax_max = plt.axes([0.55, 0.3, 0.35, 0.03])
+        ax_thr = plt.axes([0.05, 0.15, 0.6, 0.03])
 
-        self.slider_min = Slider(ax_min, "Min Brightness", self.min_val, self.max_val, valinit=self.min_val)
-        self.slider_max = Slider(ax_max, "Max Brightness", self.min_val, self.max_val, valinit=self.max_val)
+        self.slider_min = Slider(ax_min, "Min Threshold", self.min_val, self.max_val, valinit=self.min_val)
+        self.slider_max = Slider(ax_max, "Max Threshold", self.min_val, self.max_val, valinit=self.max_val)
+        self.slider_thr = Slider(ax_thr, "Threshold", np.min(self.mask), np.max(self.mask), valinit=self.thresh)
 
-        self.slider_min.on_changed(self.update_brightness)
-        self.slider_max.on_changed(self.update_brightness)
+        self.slider_min.on_changed(self.update_threshold)
+        self.slider_max.on_changed(self.update_threshold)
+        self.slider_thr.on_changed(self.update_display)
 
         self.directions_ax = plt.axes([0.9, 0.02, 0.1, 0.05])
         self.directions_button = Button(self.directions_ax, 'Directions')
@@ -379,11 +387,13 @@ class MultiViewMaskEditor:
 
         plt.show()
 
-    def update_display(self):
+    def update_display(self, val=None):
+        if val:
+            self.thresh = val
         if self.toggle:
-            self.masks[0].set_array(self.mask[self.slices[0], :, :])
-            self.masks[1].set_array(self.mask[:,self.slices[1], :])
-            self.masks[2].set_array(self.mask[:,:,self.slices[2]])
+            self.masks[0].set_array(self.mask[self.slices[0], :, :] > self.thresh)
+            self.masks[1].set_array(self.mask[:,self.slices[1], :] > self.thresh)
+            self.masks[2].set_array(self.mask[:,:,self.slices[2]] > self.thresh)
         self.imgs[0].set_array(self.volume[self.slices[0], :, :])
         self.imgs[1].set_array(self.volume[:, self.slices[1], :])
         self.imgs[2].set_array(self.volume[:, :, self.slices[2]])
@@ -407,7 +417,7 @@ class MultiViewMaskEditor:
         self.axis = axis
         return axis
 
-    def update_brightness(self, val):
+    def update_threshold(self, val):
         vmin = self.slider_min.val
         self.min_val = self.slider_min.val
         vmax = self.slider_max.val
@@ -432,9 +442,6 @@ class MultiViewMaskEditor:
         ax.text(0.5, 0.5, directions_text, fontsize=12, ha='center', va='center', wrap=True)
         ax.set_axis_off()
         plt.show()
-
-
-
 
 
 skull_strip = False
@@ -816,7 +823,7 @@ if pickleIt:
     for out_frame_idx, out_obj_ids, out_mask_logits in video_predictor.propagate_in_video(inference_state):
         print(out_frame_idx)
         video_segments[out_frame_idx] = {
-            out_obj_id: (out_mask_logits[i].cpu().numpy() > 0.0)
+            out_obj_id: out_mask_logits[i].cpu().numpy()
             for i, out_obj_id in enumerate(out_obj_ids)
         }
 
@@ -825,7 +832,7 @@ if pickleIt:
 
     for out_frame_idx, out_obj_ids, out_mask_logits in video_predictor.propagate_in_video(inference_state,reverse=True):
         video_segments[out_frame_idx] = {
-            out_obj_id: (out_mask_logits[i].cpu().numpy() > 0.0)
+            out_obj_id: out_mask_logits[i].cpu().numpy()
             for i, out_obj_id in enumerate(out_obj_ids)
         }
 
