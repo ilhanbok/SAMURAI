@@ -169,11 +169,11 @@ model_cfg = "configs/sam2.1/sam2.1_hiera_l.yaml"
 
 # Load NIfTI image
 nifti_image = nib.load(nifti_path)
-image_data = np.transpose(nifti_image.get_fdata())
+image_data = np.transpose(nifti_image.get_fdata()[:,:,:,0])#temporary patch
 image_data = np.flip(image_data,0)
 
 size = nifti_image.shape
-
+print(size)
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -327,7 +327,7 @@ class MultiViewMaskEditor:
     def __init__(self, volume, mask, toggle, min_val=0, max_val=0,config_file='config.0'):
         self.volume = volume
         self.mask = mask
-        self.slices = [121, volume.shape[1] // 2, 43]#volume.shape[2] // 2]
+        self.slices = [32, volume.shape[1] // 2, 43]#volume.shape[2] // 2]
         self.toggle = toggle
         self.orientations = ['Axial','Coronal','Sagittal']
 
@@ -678,7 +678,7 @@ if pickleIt:
     times_taken = np.append(times_taken,0)
     if havearray.lower() == 'yes':
         first = True
-        with open('/Users/bok/Library/CloudStorage/Box-Box/Belton Lab/Radiomics/segmentation/points-vs-IRR/02-1081-points_SAMURAI_20250627-150631-f3b4.txt') as f:
+        with open('/Users/bok/Documents/SAMURAI/scripts/points_SAMURAI_20251028-130338.txt') as f:
             index = 0
             for line in f:
                 if line[0] == '#' or line.strip() == "":
@@ -869,7 +869,7 @@ with open('01_1059_20241226.pkl','rb') as f:
     nifti_res = np.flip(nifti_res,0)
     nifti_res = np.transpose(nifti_res)
 
-    nifti_mask = nib.Nifti1Image(nifti_res, affine=nib.load(nifti_path).affine)
+    nifti_mask = nib.Nifti1Image(nifti_res[np.where(nifti_res > editor_fin.thresh)], affine=nib.load(nifti_path).affine)
 
 timestr = time.strftime("%Y%m%d-%H%M%S")
 nib.save(nifti_mask,'output_SAMURAI_{0}.nii.gz'.format(timestr))
