@@ -11,6 +11,7 @@ Our abstract:
 > *POA.118 - Foundation Model-Assisted, Expert Supervised Segmentation of Hemorrhages on Magnetic Resonance Images in Acute Traumatic Brain Injury Clinical Subjects*, National Neurotrauma Symposium 2025 (Philadelphia, PA)
 
 Adaptation of SAM2 for segmentation of brain hematomas.
+SAMURAI can also be used as a Brain Extraction Tool (as opposed to BET:https://andysbrainbook.readthedocs.io/en/latest/fMRI_Short_Course/Preprocessing/Skull_Stripping.html) 
 
 **NOTE:** This software is not intended for clinical use.
 
