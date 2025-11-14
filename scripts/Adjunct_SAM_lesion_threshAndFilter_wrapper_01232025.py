@@ -11,7 +11,7 @@ import platform
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Button, Slider
+from matplotlib.widgets import Button, Slider, TextBox, RadioButtons
 import json
 
 if __name__ == '__main__':
@@ -340,6 +340,7 @@ class MultiViewMaskEditor:
         self.slices = [32, volume.shape[1] // 2, 43]#volume.shape[2] // 2]
         self.toggle = toggle
         self.orientations = ['Axial','Coronal','Sagittal']
+        self.shape = volume.shape
 
         with open(config_file_def,'r') as f:
             config = json.load(f)
@@ -379,9 +380,9 @@ class MultiViewMaskEditor:
             self.buttons.append(button)
 
         # Brightness sliders
-        ax_min = plt.axes([0.1, 0.3, 0.35, 0.03])
-        ax_max = plt.axes([0.55, 0.3, 0.35, 0.03])
-        ax_thr = plt.axes([0.05, 0.15, 0.6, 0.03])
+        ax_min = plt.axes([0.1, 0.2, 0.35, 0.03])
+        ax_max = plt.axes([0.55, 0.2, 0.35, 0.03])
+        ax_thr = plt.axes([0.1, 0.1, 0.6, 0.03])
 
         self.slider_min = Slider(ax_min, "Min Threshold", self.min_val, self.max_val, valinit=self.min_val)
         self.slider_max = Slider(ax_max, "Max Threshold", self.min_val, self.max_val, valinit=self.max_val)
@@ -394,6 +395,28 @@ class MultiViewMaskEditor:
         self.directions_ax = plt.axes([0.9, 0.02, 0.1, 0.05])
         self.directions_button = Button(self.directions_ax, 'Directions')
         self.directions_button.on_clicked(self.show_directions_toggle)
+
+        # Slice specification textbox & buttons
+        ax_radio = plt.axes([0.9, 0.2, 0.1, 0.1])
+        self.radio = RadioButtons(ax_radio, ('Axial (0)', 'Coronal (1)', 'Sagittal (2)'),
+                             label_props={'color': 'cmy', 'fontsize': [12, 14, 16]},
+                             radio_props={'s': [16, 32, 64]})
+
+        ax_0 = plt.axes([0.1, 0.15, 0.1, 0.05])
+        ax_1 = plt.axes([0.45, 0.15, 0.1, 0.05])
+        ax_2 = plt.axes([0.80, 0.15, 0.1, 0.05])
+
+        self.slice_0 = TextBox(ax_0,'Slice (axial):', initial=self.shape[0])
+        self.slice_1 = TextBox(ax_1,'Slice (coronal):', initial=self.shape[1])
+        self.slice_2 = TextBox(ax_2,'Slice (sagittal):', initial=self.shape[2])
+
+        self.slice_0.on_text_change(lambda event, axis=0: self.on_text_change(event,axis))
+        self.slice_1.on_text_change(lambda event, axis=1: self.on_text_change(event,axis))
+        self.slice_2.on_text_change(lambda event, axis=2: self.on_text_change(event,axis))
+
+        self.display_text = ax.text(0.5, 0.5, f'Enter a number (0-{(self.shape[0],self.shape[1],self.shape[2])})',
+                       ha='center', va='center',
+                       fontsize=14, wrap=True)
 
         plt.show()
 
@@ -453,6 +476,13 @@ class MultiViewMaskEditor:
         ax.set_axis_off()
         plt.show()
 
+    def on_text_change(self, text, axis):
+        try:
+        #"""Validate and update display as user types"""
+            self.slices[axis] = int(text)
+        except Exception as e:
+            pass
+        self.update_display()
 
 skull_strip = False
 if skull_strip:
@@ -642,12 +672,6 @@ if pickleIt:
                     coordinates.append((float(fl[0]),float(fl[1])))
             if index < int(yn[0]) + int(yn[1]):
                 print('WARNING: coordinate count lower than specified number (check your preloaded file)')
-        if n == 0:
-            slice_data = data[editor.slices[0], :, :]
-        if n == 1:
-            slice_data = data[:, editor.slices[1], :]
-        if n == 2:
-            slice_data = data[:, :, editor.slices[2]]
         #imshow_click = plt.imshow(slice_data, vmin=editor.min_val, vmax=editor.max_val/2)#clim=(editor.min_val, editor.max_val),vmin=editor.min_val,vmax=editor.max_val,cmap='viridis')
 
         #imshow_click.set_clim(editor.min_val, editor.max_val)
@@ -800,7 +824,10 @@ if pickleIt:
         print(yn)
         # for labels, `1` means positive click and `0` means negative click
         #np.array(np.append(np.ones((1,int(yn[0]))),np.zeros((1,int(yn[1])))), np.int32)
-        times_taken = np.append(times_taken, time.time() - start_time)
+        if preloaded_it:
+            times_taken = np.append(times_taken, '0 (preloaded)')
+        else:
+            times_taken = np.append(times_taken, time.time() - start_time)
         print(times_taken)
 
         # fig, ax = plt.subplots(1, len(out_mask_logits[0]), figsize=(20, 10))
@@ -819,23 +846,23 @@ if pickleIt:
         #     show_mask((out_mask_logits[0][i].cpu().numpy()), plt.gca(), obj_id=out_obj_ids[0])
         #
         plt.show()
+        start_time = time.time()
         answer = input('Approve? (Yes/No)')
         if answer.lower() == 'yes' or answer.lower() == 'y':
             Final_Approve = True
         redux = True
     timestr = time.strftime("%Y%m%d-%H%M%S")
-    with open('points_SAMURAI_{0}.txt'.format(timestr),'w') as wt:
-        inds = np.where(np.array(yn) == 1)
-        inds0 = np.where(np.array(yn) == 0)
+    if not preloaded_it:
+      with open('points_SAMURAI_{0}.txt'.format(timestr),'w') as wt:
         wt.write('{0}, {1}\n'.format(sum(yn),len(yn)-sum(yn)))
-        for c in sorted(coordinates[inds]):
-            wt.write('{0}, {1}\n'.format(c[0],c[1]))
-        for c0 in sorted(coordinates[inds0]):
-            wt.write('{0}, {1}\n'.format(c0[0],c0[1]))
+        e = 0
+        for c in coordinates:
+            wt.write('{0}: {1}, {2}\n'.format(yn[e],c[0],c[1]))
+            e += 1
         wt.write('#slice: {0}'.format(editor.slices[n]))
         wt.write('#axis: {0}'.format(n))
 
-    times_taken[1] += time.time() - start_time
+    times_taken = np.append(times_taken, time.time() - start_time)
     print(times_taken)
 
     start_time = time.time()
@@ -891,11 +918,11 @@ with open('01_1059_20241226.pkl','rb') as f:
     nifti_res = np.flip(nifti_res,0)
     nifti_res = np.transpose(nifti_res)
 
-    nrones = np.ones(nifti_res.shape)
+    nrzeros = np.zeros(nifti_res.shape)
     included = np.where(nifti_res > editor_fin.thresh)
-    print(included)
+    nrzeros[included] = 1
 
-    nifti_mask = nib.Nifti1Image(nrones[included[:,0],included[:,1],included[:,2]], affine=nib.load(nifti_path).affine)
+    nifti_mask = nib.Nifti1Image(nrzeros, affine=nib.load(nifti_path).affine)
 
 timestr = time.strftime("%Y%m%d-%H%M%S")
 nib.save(nifti_mask,'output_SAMURAI_{0}.nii.gz'.format(timestr))
