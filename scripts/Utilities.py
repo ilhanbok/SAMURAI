@@ -154,7 +154,7 @@ def zero_slices(input_file, output_file, slice_range):
 
     # Get the slice range and set the specified slices to zero
     start_slice, end_slice = slice_range
-    data[:, :, start_slice-1:end_slice] = 0
+    data[:, :, start_slice:end_slice+1] = 0
 
     # Save the modified data as a new NIfTI file
     modified_nii = nib.Nifti1Image(data, nii.affine)
@@ -207,7 +207,7 @@ Used to delete slices within a range for spurious segmentation output.
 - Usage:
 `python Utilities.py ZERO input_file output_file slice_start slice_finish`
 - Example:
-`python Utilities.py ZERO subject_<m>.nii.gz subject_<m>_zeroed.nii.gz 0 14`
+`python Utilities.py ZERO subject_<m>.nii.gz subject_<m>_zeroed.nii.gz 1 14`
 - Output: A new NIFTI file with superfluous segmentation masks removed""")
         else:
             input_file = sys.argv[1]
@@ -356,4 +356,3 @@ the average and standard deviation across the whole set of subjects. An IRV of I
             output_csv = sys.argv[2]
 
             process_folder(subject_folder, output_csv)
-
