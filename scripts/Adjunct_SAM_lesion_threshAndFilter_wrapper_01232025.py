@@ -859,8 +859,8 @@ if pickleIt:
         for c in coordinates:
             wt.write('{0}: {1}, {2}\n'.format(yn[e],c[0],c[1]))
             e += 1
-        wt.write('#slice: {0}'.format(editor.slices[n]))
-        wt.write('#axis: {0}'.format(n))
+        wt.write('#slice: {0}\n'.format(editor.slices[n]))
+        wt.write('#axis: {0}\n'.format(n))
 
     times_taken = np.append(times_taken, time.time() - start_time)
     print(times_taken)
