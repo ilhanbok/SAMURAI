@@ -6,8 +6,94 @@ import nibabel as nib
 from scipy.ndimage import rotate, shift
 from skimage.measure import regionprops, label
 import os
+import time
 
 import pickle
+
+import sys
+
+from PyQt5.QtWidgets import QApplication, QInputDialog, QMessageBox, QWidget
+from PyQt5.QtCore import Qt
+
+import matplotlib
+import matplotlib.pyplot as plt
+from matplotlib.widgets import Button, TextBox
+
+def confirm(text):
+    with matplotlib.rc_context({'toolbar': 'None'}):
+        fig, ax = plt.subplots()
+        fig.canvas.manager.set_window_title("Notice")
+        ax.axis('off')
+        ax.text(0.5, 0.5, text, ha='center', va='center', wrap=True, fontsize=14)
+
+        result = []
+
+        # Add an "OK" button
+        ax_ok = plt.axes([0.4, 0.1, 0.2, 0.1])
+        btn_ok = Button(ax_ok, 'OK')
+
+        def on_ok(event):
+            result.append(True)
+            plt.close(fig)
+
+        btn_ok.on_clicked(on_ok)
+
+        plt.show()
+        return True if result else False
+
+
+def call(question):
+    with matplotlib.rc_context({'toolbar': 'None'}):
+        fig, ax = plt.subplots()
+        fig.canvas.manager.set_window_title("Exit Application")
+        ax.axis('off')
+        ax.text(0.5, 0.6, question, ha='center', va='center', wrap=True, fontsize=14)
+
+        result = []
+
+        # Yes button
+        ax_yes = plt.axes([0.25, 0.2, 0.2, 0.1])
+        btn_yes = Button(ax_yes, 'Yes')
+        def on_yes(event):
+            result.append('yes')
+            plt.close(fig)
+        btn_yes.on_clicked(on_yes)
+
+        # No button
+        ax_no = plt.axes([0.55, 0.2, 0.2, 0.1])
+        btn_no = Button(ax_no, 'No')
+        def on_no(event):
+            result.append('no')
+            plt.close(fig)
+        btn_no.on_clicked(on_no)
+
+        plt.show()
+        return result[0] if result else None
+
+
+def ask(question):
+    with matplotlib.rc_context({'toolbar': 'None'}):
+        fig, ax = plt.subplots(figsize=(4, 2))
+        fig.canvas.manager.set_window_title("Input")
+        ax.axis('off')
+        ax.text(0.5, 0.7, question, ha='center', va='center', wrap=True, fontsize=12)
+
+        result = []
+
+        # Text box
+        ax_box = plt.axes([0.2, 0.4, 0.6, 0.2])
+        text_box = TextBox(ax_box, "")
+
+        # Submit button
+        ax_submit = plt.axes([0.4, 0.1, 0.2, 0.15])
+        btn_submit = Button(ax_submit, 'Submit')
+        def on_submit(event):
+            result.append(text_box.text)
+            plt.close(fig)
+        btn_submit.on_clicked(on_submit)
+
+        plt.show()
+        return result[0] if result else None
 
 def compute_asymmetry_index(slice,i):
     F = np.flipud(slice)
@@ -207,6 +293,8 @@ def compute_gradient_magnitude(image):
     return grad_magnitude
 
 def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,volumes=[]):
+    import sys
+
     # Check for CUDA availability
     if torch.cuda.is_available():
         device = torch.device("cuda")
@@ -343,8 +431,7 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
     size = image_data.shape
     sam2_model = build_sam2(model_cfg, sam2_checkpoint, device=device)
     video_predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint, device=device)
-    print('has {0} unique features'.format(len(pd.unique(list_of_corresponding_indices)[0:])))
-    input('Press Enter to continue.')
+    confirm('Has {0} unique features'.format(len(pd.unique(list_of_corresponding_indices)[0:])))
 
     curr_e = 0
     unique_loop = pd.unique(list_of_corresponding_indices)
@@ -403,7 +490,6 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
             Grab the folder and take logical AND'''
 
 
-            fig, ax=plt.subplots()
             im = plt.imread(os.path.join(output_dir, frame_names[ann_frame_idx]))
             implot = plt.imshow(im,cmap='gray')
 
@@ -421,10 +507,10 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
             #fig.canvas.mpl_connect('button_press_event', on_click)
             plt.show()
 
-            g = input('Is this a lesion? (Si/No)')
+            g = call('Is this a lesion? (yes/no)')
             confirmed = False
             passCurr = False
-            if (g == 'Si') or (g == ''):
+            if (g == 'yes'):
                 print('Alright! Lesion confirmed. Moving forward with segmentation.')
                 isLesion = True
                 pass
@@ -442,18 +528,21 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
                 plt.imshow(Image.open(os.path.join(output_dir, frame_names[ann_frame_idx])),interpolation='none')
                 fig.canvas.mpl_connect('button_press_event', on_click)
                 plt.show()
-                g = input('Gusta? (Si/No)')
+
+                g = call('Gusta? (yes/no)')
                 confirmed = False
                 while confirmed == False:
                     try:
-                        if g == 'Si':
-                            yn = input('Please enter fg (1) or bg (0) list: ')
+                        if g == 'yes':
+
+                            yn = ask('Please enter fg (1) or bg (0) list: ')
                             yn = yn.split(' ')
                             gusta = True
                             confirmed = True
                         else:
-                            h = input('Are you sure you want to discard? (Si/No)')
-                            if h == 'Si':
+
+                            h = call('Are you sure you want to discard? (yes/no)')
+                            if h == 'yes':
                                 confirmed = True
                     except:
                         print('Incorrect input')
@@ -569,8 +658,9 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
 
                 plt.show()
 
-            happy = input('Are you happy with this final segmentation result which will be propagated through the whole volume? (Si = yes, No = redo selection)')
-            if not ((happy == 'Si') or (happy == 'Yes') or (happy =='')):
+
+            happy = call('Are you happy with this final segmentation result which will be propagated through the whole volume? (yes; no = redo selection)')
+            if not (happy == 'yes'):
                 continue
 
             #plt.figure(figsize=(9, 6))
