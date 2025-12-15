@@ -354,7 +354,7 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
     size = image_data.shape
     sam2_model = build_sam2(model_cfg, sam2_checkpoint, device=device)
     video_predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint, device=device)
-    dialogues.confirm('Has {0} unique features'.format(len(pd.unique(list_of_corresponding_indices)[0:])))
+    dialogues.confirm('This MRI scan has {0} unique features'.format(len(pd.unique(list_of_corresponding_indices)[0:])))
 
     curr_e = 0
     unique_loop = pd.unique(list_of_corresponding_indices)
@@ -430,7 +430,7 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
             #fig.canvas.mpl_connect('button_press_event', on_click)
             plt.show()
 
-            g = dialogues.call('Is this a lesion? (yes/no)')
+            g = dialogues.call('Is this a lesion?')
             confirmed = False
             passCurr = False
             if (g == 'yes'):
@@ -452,7 +452,7 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
                 fig.canvas.mpl_connect('button_press_event', on_click)
                 plt.show()
 
-                g = dialogues.call('Gusta? (yes/no)')
+                g = dialogues.call('Approve?')
                 confirmed = False
                 while confirmed == False:
                     try:
@@ -464,7 +464,7 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
                             confirmed = True
                         else:
 
-                            h = dialogues.call('Are you sure you want to discard? (yes/no)')
+                            h = dialogues.call('Are you sure you want to discard?')
                             if h == 'yes':
                                 confirmed = True
                     except:
