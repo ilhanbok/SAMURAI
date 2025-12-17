@@ -14,6 +14,8 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Button, Slider, TextBox, RadioButtons
 import json
 
+import dialogues
+
 if __name__ == '__main__':
     print('Usage: python Adjunct_SAM_lesion_threshAndFilter_wrapper_01232025.py NIFTI_PATH')
     print('e.g. python Adjunct_SAM_lesion_threshAndFilter_wrapper_01232025.py ../niivue-images/chris_t1.nii.gz')
@@ -651,7 +653,7 @@ if pickleIt:
 
 
 
-    havearray = input('Did you preload an array of points? (Yes/No)')
+    havearray = dialogues.call('Did you preload an array of points? (Yes/No)')
     #frame_names = np.array(list(range(data.shape[2]))).astype(str)
     coordinates = []
     preloaded_it = False
@@ -847,8 +849,8 @@ if pickleIt:
         #
         plt.show()
         start_time = time.time()
-        answer = input('Approve? (Yes/No)')
-        if answer.lower() == 'yes' or answer.lower() == 'y':
+        answer = dialogues.call('Approve? (Yes/No)')
+        if answer == 'yes':
             Final_Approve = True
         redux = True
     timestr = time.strftime("%Y%m%d-%H%M%S")
