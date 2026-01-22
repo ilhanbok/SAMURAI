@@ -14,12 +14,18 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Button, Slider, TextBox, RadioButtons
 import json
 
+import os.path
+
 import dialogues
 
 if __name__ == '__main__':
     print('Usage: python Adjunct_SAM_lesion_threshAndFilter_wrapper_01232025.py NIFTI_PATH')
     print('e.g. python Adjunct_SAM_lesion_threshAndFilter_wrapper_01232025.py ../niivue-images/chris_t1.nii.gz')
     nifti_path = str(sys.argv[1])
+    if len(sys.argv) >= 3:
+        preload_path = str(sys.argv[2])
+    else:
+        preload_path = None
 
 import pickle
 
@@ -513,6 +519,8 @@ subplot_title_dictionary = {
 out_mask_logits = []
 redo_cache = []
 yn_cache = []
+
+LPFP = 'last_preloaded.txt'
 if pickleIt:
     def undo(event, ax):
         global coordinates
@@ -569,7 +577,7 @@ if pickleIt:
                 yn = np.append(yn,mode)
             if intentional:
                 ax1.clear()
-                imshow_click = ax1.imshow(slice_data, vmin=editor.min_val*np.max(slice_data)/np.max(image_data), vmax=editor.max_val*np.max(slice_data)/np.max(image_data))#,clim=(editor.min_val, editor.max_val),vmin=editor.min_val,vmax=editor.max_val,cmap='viridis')
+                imshow_click = ax1.imshow(slice_data, vmin=editor.min_val*np.max(slice_data)/np.max(image_data), vmax=editor.max_val*np.max(slice_data)/np.max(image_data), cmap='gray')#,clim=(editor.min_val, editor.max_val),vmin=editor.min_val,vmax=editor.max_val,cmap='viridis')
                 ax1.set_title(title)
                 if len(coordinates) > 0:
                     print('1')
@@ -657,31 +665,45 @@ if pickleIt:
     #frame_names = np.array(list(range(data.shape[2]))).astype(str)
     coordinates = []
     preloaded_it = False
+    failed_preload = False
     if havearray.lower() == 'yes':
         preloaded_it = True
         first = True
-        with open('/Users/bok/Library/CloudStorage/Box-Box/Belton Lab/Research/SAMURAI/segmentation/info_files/points_SAMURAI_20251107-151826_07_1053_SupRTG.txt') as f:
-            index = 0
-            for line in f:
-                if line[0] == '#' or line.strip() == "":
-                    continue
-                fl = line.split(',')
-                fl = [s.strip() for s in fl]
-                if first:
-                    yn = [int(float(fl[0])),int(float(fl[1]))]
-                    first = False
-                else:
-                    coordinates.append((float(fl[0]),float(fl[1])))
-            if index < int(yn[0]) + int(yn[1]):
-                print('WARNING: coordinate count lower than specified number (check your preloaded file)')
-        #imshow_click = plt.imshow(slice_data, vmin=editor.min_val, vmax=editor.max_val/2)#clim=(editor.min_val, editor.max_val),vmin=editor.min_val,vmax=editor.max_val,cmap='viridis')
+        if preload_path is None:
+          if os.path.isfile(LPFP):
+            with open(LPFP) as preload_file_file:
+                preload_path = preload_file_file.readline().strip()
+            try:
+                with open(preload_path) as f:
+                    index = 0
+                    for line in f:
+                        if line[0] == '#' or line.strip() == "":
+                            continue
+                        if first:
+                            fl = line.split(',')
+                            yn = [int(float(fl[0])),int(float(fl[1]))]
+                            first = False
+                        else:
+                            fl = line.split(':')[1].strip().split(',')
+                            fl = [s.strip() for s in fl]
+                            tuple = (float(fl[0]),float(fl[1]))
+                            if line.split(':')[0] == '1.0':
+                                coordinates.insert(0,tuple)
+                            else:
+                                coordinates.append(tuple)
 
-        #imshow_click.set_clim(editor.min_val, editor.max_val)
-        #plt.show()
-        print(coordinates)
-        Approve = False
-        yn = np.append(np.ones(yn[0]),np.zeros(yn[1]))
-    else:
+                    if index < int(yn[0]) + int(yn[1]):
+                        print('WARNING: coordinate count lower than specified number (check your preloaded file)')
+                #imshow_click = plt.imshow(slice_data, vmin=editor.min_val, vmax=editor.max_val/2)#clim=(editor.min_val, editor.max_val),vmin=editor.min_val,vmax=editor.max_val,cmap='viridis')
+
+                #imshow_click.set_clim(editor.min_val, editor.max_val)
+                #plt.show()
+                print(coordinates)
+                Approve = False
+                yn = np.append(np.ones(yn[0]),np.zeros(yn[1]))
+            except Exception as e:
+                failed_preload = True
+    if failed_preload or havearray.lower() != 'yes':
         xs = []
         ys = []
         Approve = False
@@ -855,7 +877,8 @@ if pickleIt:
         redux = True
     timestr = time.strftime("%Y%m%d-%H%M%S")
     if not preloaded_it:
-      with open('points_SAMURAI_{0}.txt'.format(timestr),'w') as wt:
+      last_fpath = 'points_SAMURAI_{0}.txt'.format(timestr)
+      with open(last_fpath,'w') as wt:
         wt.write('{0}, {1}\n'.format(sum(yn),len(yn)-sum(yn)))
         e = 0
         for c in coordinates:
@@ -863,6 +886,8 @@ if pickleIt:
             e += 1
         wt.write('#slice: {0}\n'.format(editor.slices[n]))
         wt.write('#axis: {0}\n'.format(n))
+      with open(LPFP,'w') as wt2:
+        wt2.write(last_fpath)
 
     times_taken = np.append(times_taken, time.time() - start_time)
     print(times_taken)
