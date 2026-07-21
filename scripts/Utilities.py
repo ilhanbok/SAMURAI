@@ -136,7 +136,7 @@ import nibabel as nib
 import numpy as np
 import sys
 
-def zero_slices(input_file, output_file, slice_range):
+def zero_slices(input_file, output_file, slice_range, axis):
     """
     Sets the specified slices of a NIfTI image to zero.
 
@@ -154,7 +154,15 @@ def zero_slices(input_file, output_file, slice_range):
 
     # Get the slice range and set the specified slices to zero
     start_slice, end_slice = slice_range
-    data[:, :, start_slice:end_slice+1] = 0
+    match axis:
+        case 0:
+            data[:, :, start_slice:end_slice+1] = 0
+        case 1:
+            data[:, start_slice:end_slice+1, :] = 0
+        case 2:
+            data[start_slice:end_slice+1, :, :] = 0
+        case _:
+            print('Error with invalid axis.')
 
     # Save the modified data as a new NIfTI file
     modified_nii = nib.Nifti1Image(data, nii.affine)
@@ -197,25 +205,30 @@ have been placed in the same folder `input_dir`
 
 
     if type == "ZERO":
+        print('test')
         # Ensure correct number of arguments
-        if len(sys.argv) != 5:
+        if len(sys.argv) < 5 or len(sys.argv) > 6:
             print("""2. `ZERO`
 - Prerequisites: Have the NIFTI file and slice indices ready. ITK-SNAP can
 be used to inspect the file and determine slices to clear before script usage.
 - Description:
 Used to delete slices within a range for spurious segmentation output.
 - Usage:
-`python Utilities.py ZERO input_file output_file slice_start slice_finish`
+`python Utilities.py ZERO input_file output_file slice_start slice_finish (axis)`
 - Example:
-`python Utilities.py ZERO subject_<m>.nii.gz subject_<m>_zeroed.nii.gz 1 14`
+`python Utilities.py ZERO subject_<m>.nii.gz subject_<m>_zeroed.nii.gz 1 14 0`
 - Output: A new NIFTI file with superfluous segmentation masks removed""")
         else:
             input_file = sys.argv[1]
             output_file = sys.argv[2]
             slice_start = int(sys.argv[3])
             slice_finish = int(sys.argv[4])
+            if len(sys.argv) == 6:
+                axis = int(sys.argv[5])
+            else:
+                axis = 0
 
-            zero_slices(input_file, output_file, (slice_start, slice_finish))
+            zero_slices(input_file, output_file, (slice_start, slice_finish), axis)
             print(f"Modified NIfTI file saved to {output_file}")
 
 

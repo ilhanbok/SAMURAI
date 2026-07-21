@@ -4,3 +4,4 @@ scripts/temp_jpeg_stack
 venvs/
 ./.*
 scripts/.*
+scripts/.DS_Store

@@ -664,8 +664,7 @@ if pickleIt:
 
 
 
-    #havearray = dialogues.call('Did you preload an array of points? (Yes/No)')
-    havearray = 'no'
+    havearray = dialogues.call('Did you preload an array of points? (Yes/No)')
     #frame_names = np.array(list(range(data.shape[2]))).astype(str)
     coordinates = []
     preloaded_it = False

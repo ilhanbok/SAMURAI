@@ -11,7 +11,7 @@ Our abstract:
 > *POA.118 - Foundation Model-Assisted, Expert Supervised Segmentation of Hemorrhages on Magnetic Resonance Images in Acute Traumatic Brain Injury Clinical Subjects*, National Neurotrauma Symposium 2025 (Philadelphia, PA)
 
 Adaptation of SAM2 for segmentation of brain hematomas.
-SAMURAI can also be used as a Brain Extraction Tool (as opposed to BET:https://andysbrainbook.readthedocs.io/en/latest/fMRI_Short_Course/Preprocessing/Skull_Stripping.html) 
+SAMURAI can also be used as a Brain Extraction Tool (as opposed to BET:https://andysbrainbook.readthedocs.io/en/latest/fMRI_Short_Course/Preprocessing/Skull_Stripping.html)
 
 **NOTE:** This software is not intended for clinical use.
 
@@ -80,24 +80,21 @@ Or (Windows 11)
 To use mode (i);
 - Run:
 `python Adjunct_SAM_lesion_threshAndFilter_wrapper_01232025.py ../niivue-images/chris_t1.nii.gz` or your nifti file of choice<br>
-- Use the scroll wheel to select the appropriate slice on any axis (sagittal, coronal, or axial) and click 'Si'
+- Use the scroll wheel to select the appropriate slice on any axis (sagittal, coronal, or axial) and confirm selection
 - Click on the points within the frame which you believe to be either intra-lesional (fg:1) or extra-lesional (bg:0).
-- Enter the number of intra- and extra-lesional points. e.g. `4 2`
-- Segmentation will proceed automatically
+- Segmentation will update automatically
 - The final mask will be displayed and can be edited as desired
 - The segmented landmark will be saved to `scripts/output_SAMURAI.nii.gz`
-- Time splits for each step will be saved to 'scripts/times_SAMURAI.txt`
+- Time splits and point selections for each step will be saved to 'scripts/times_SAMURAI.txt`
 
 Video tutorial:<br>
 https://www.youtube.com/watch?v=8VA3K332Exo
 
-Video tutorial:<br>
-https://www.youtube.com/watch?v=8VA3K332Exo
 To use mode (ii):
 - Usage: `python thresholdSAM_01062025.py NIFTI_PATH output_csv(.csv) mode(QSM or RAW) threshold(e.g.400) flip(lesions are dark? [0/1]) blur(gaussian blur σ to hide artifacts? [0/1]) skullstrip(strip skull or not? [0/1])`
 - For example: `python thresholdSAM_01062025.py ../niivue-images/chris_t1.nii.gz chris_t1 RAW 100 1 0 0`
-- After iterating over possible lesions, you have the option to inspect and Accept (`Si`) each lesion or not.
-- As for mode (i), there will be a pop-up point selection window to add additional foreground / background points before a final confirmation dialog
+- After iterating over possible lesions, you have the option to inspect and approve each lesion or not.
+- Like for mode (i), there will be a pop-up point selection window to add additional foreground / background points before a final confirmation dialog
 - Each lesion has a unique identification number which will be appended to its output NIFTI file. These files can be merged and viewed as a final .nii mask.
 
 ## Additional editing
@@ -144,9 +141,9 @@ Description:
 Used to delete slices within a range for spurious segmentation output.
 
 Usage:
-`python ZERO.py input_file output_file slice_start slice_finish`
+`python ZERO.py input_file output_file slice_start slice_finish (axis)`
 Example:
-`python ZERO.py subject_<m>.nii.gz subject_<m>_zeroed.nii.gz 0 14
+`python ZERO.py subject_<m>.nii.gz subject_<m>_zeroed.nii.gz 1 14 0 (optional)
 `
 
 ## About/Contact Information

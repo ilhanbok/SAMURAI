@@ -6,8 +6,17 @@ import nibabel as nib
 from scipy.ndimage import rotate, shift
 from skimage.measure import regionprops, label
 import os
+import time
 
 import pickle
+
+import sys
+
+from PyQt5.QtWidgets import QApplication, QInputDialog, QMessageBox, QWidget
+from PyQt5.QtCore import Qt
+
+import matplotlib.pyplot as plt
+import dialogues
 
 def compute_asymmetry_index(slice,i):
     F = np.flipud(slice)
@@ -207,6 +216,8 @@ def compute_gradient_magnitude(image):
     return grad_magnitude
 
 def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,volumes=[]):
+    import sys
+
     # Check for CUDA availability
     if torch.cuda.is_available():
         device = torch.device("cuda")
@@ -343,8 +354,7 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
     size = image_data.shape
     sam2_model = build_sam2(model_cfg, sam2_checkpoint, device=device)
     video_predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint, device=device)
-    print('has {0} unique features'.format(len(pd.unique(list_of_corresponding_indices)[0:])))
-    input('Press Enter to continue.')
+    dialogues.confirm('This MRI scan has {0} unique features'.format(len(pd.unique(list_of_corresponding_indices)[0:])))
 
     curr_e = 0
     unique_loop = pd.unique(list_of_corresponding_indices)
@@ -403,7 +413,6 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
             Grab the folder and take logical AND'''
 
 
-            fig, ax=plt.subplots()
             im = plt.imread(os.path.join(output_dir, frame_names[ann_frame_idx]))
             implot = plt.imshow(im,cmap='gray')
 
@@ -421,10 +430,10 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
             #fig.canvas.mpl_connect('button_press_event', on_click)
             plt.show()
 
-            g = input('Is this a lesion? (Si/No)')
+            g = dialogues.call('Is this a lesion?')
             confirmed = False
             passCurr = False
-            if (g == 'Si') or (g == ''):
+            if (g == 'yes'):
                 print('Alright! Lesion confirmed. Moving forward with segmentation.')
                 isLesion = True
                 pass
@@ -442,18 +451,21 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
                 plt.imshow(Image.open(os.path.join(output_dir, frame_names[ann_frame_idx])),interpolation='none')
                 fig.canvas.mpl_connect('button_press_event', on_click)
                 plt.show()
-                g = input('Gusta? (Si/No)')
+
+                g = dialogues.call('Approve?')
                 confirmed = False
                 while confirmed == False:
                     try:
-                        if g == 'Si':
-                            yn = input('Please enter fg (1) or bg (0) list: ')
+                        if g == 'yes':
+
+                            yn = dialogues.ask('Please enter fg (1) or bg (0) list: ')
                             yn = yn.split(' ')
                             gusta = True
                             confirmed = True
                         else:
-                            h = input('Are you sure you want to discard? (Si/No)')
-                            if h == 'Si':
+
+                            h = dialogues.call('Are you sure you want to discard?')
+                            if h == 'yes':
                                 confirmed = True
                     except:
                         print('Incorrect input')
@@ -569,8 +581,9 @@ def main(nifti_path, output_csv,list_of_centroids,list_of_corresponding_indices,
 
                 plt.show()
 
-            happy = input('Are you happy with this final segmentation result which will be propagated through the whole volume? (Si = yes, No = redo selection)')
-            if not ((happy == 'Si') or (happy == 'Yes') or (happy =='')):
+
+            happy = dialogues.call('Are you happy with this final segmentation result which will be propagated through the whole volume? (yes; no = redo selection)')
+            if not (happy == 'yes'):
                 continue
 
             #plt.figure(figsize=(9, 6))
