@@ -486,8 +486,11 @@ class MultiViewMaskEditor:
 
     def on_text_change(self, text, axis):
         try:
-        #"""Validate and update display as user types"""
-            self.slices[axis] = int(text)
+        #"""Validate and update display as user types
+            if axis == 0:
+                self.slices[axis] = len(self.volume[:,0,0])-int(text)
+            else:
+                self.slices[axis] = int(text)
         except Exception as e:
             pass
         self.update_display()
