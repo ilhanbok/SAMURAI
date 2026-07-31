@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}SAMURAI &middot; utilities{% endblock %}
+
+{% block content %}
+<h1>Utilities</h1>
+<p class="hint">
+  The five <code>Utilities.py</code> operations. Files are processed in a
+  throw-away server workspace and the result is offered as a download.
+</p>
+
+<div class="banner banner-error" id="error-banner" hidden></div>
+
+<section class="panel">
+  <h2>MERGE</h2>
+  <p>Voxel-wise logical OR of every uploaded mask &mdash; they must share a shape.</p>
+  <form class="utility" data-endpoint="/api/utilities/merge">
+    <label>NIfTI masks <input type="file" name="files" multiple required accept=".nii,.nii.gz,.gz"></label>
+    <label>Output name <input type="text" name="output" value="merged.nii.gz"></label>
+    <button type="submit">Merge</button>
+  </form>
+  <div class="result"></div>
+</section>
+
+<section class="panel">
+  <h2>ZERO</h2>
+  <p>
+    Blank a slice range of spurious segmentation. Axis numbering follows
+    <code>Utilities.py</code>: 0 blanks along the third array dimension, 1 the
+    second, 2 the first.
+  </p>
+  <form class="utility" data-endpoint="/api/utilities/zero">
+    <label>NIfTI mask <input type="file" name="file" required accept=".nii,.nii.gz,.gz"></label>
+    <div class="grid-3">
+      <label>Slice start <input type="number" name="start" value="0" required></label>
+      <label>Slice finish <input type="number" name="finish" value="0" required></label>
+      <label>Axis
+        <select name="axis"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
+      </label>
+    </div>
+    <label>Output name <input type="text" name="output" value="zeroed.nii.gz"></label>
+    <button type="submit">Zero slices</button>
+  </form>
+  <div class="result"></div>
+</section>
+
+<section class="panel">
+  <h2>DUPLICATE</h2>
+  <p>Copy one slice onto another (1-based indices, third array dimension).</p>
+  <form class="utility" data-endpoint="/api/utilities/duplicate">
+    <label>NIfTI mask <input type="file" name="file" required accept=".nii,.nii.gz,.gz"></label>
+    <div class="grid-2">
+      <label>Source slice <input type="number" name="source" value="1" required></label>
+      <label>Destination slice <input type="number" name="destination" value="2" required></label>
+    </div>
+    <label>Output name <input type="text" name="output" value="duplicated.nii.gz"></label>
+    <button type="submit">Duplicate slice</button>
+  </form>
+  <div class="result"></div>
+</section>
+
+<section class="panel">
+  <h2>VOLUME</h2>
+  <p>Volume of each uploaded mask, in mm&sup3;, plus mean and standard deviation.</p>
+  <form class="utility" data-endpoint="/api/utilities/volume">
+    <label>NIfTI masks <input type="file" name="files" multiple required accept=".nii,.nii.gz,.gz"></label>
+    <label>Output CSV <input type="text" name="output" value="volumes.csv"></label>
+    <button type="submit">Compute volumes</button>
+  </form>
+  <div class="result"></div>
+</section>
+
+<section class="panel">
+  <h2>IRV</h2>
+  <p>
+    Inter-rater variability between two sets of masks, paired by sort order.
+    Cohen IRV &lt; 0.5 is poor, 0.5&ndash;0.7 good, &gt; 0.7 excellent; the Dice
+    score is reported alongside.
+  </p>
+  <form class="utility" data-endpoint="/api/utilities/irv">
+    <div class="grid-2">
+      <label>Rater A masks <input type="file" name="files_a" multiple required accept=".nii,.nii.gz,.gz"></label>
+      <label>Rater B masks <input type="file" name="files_b" multiple required accept=".nii,.nii.gz,.gz"></label>
+    </div>
+    <button type="submit">Compute IRV</button>
+  </form>
+  <div class="result"></div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/utilities.js') }}"></script>
+{% endblock %}

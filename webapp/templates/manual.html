@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block title %}SAMURAI &middot; manual segmentation{% endblock %}
+
+{% block content %}
+<h1>Mode (i) &middot; manual point / bounding-box selection</h1>
+
+<ol class="steps" id="steps">
+  <li data-step="1" class="current">Load</li>
+  <li data-step="2">Plane &amp; slice</li>
+  <li data-step="3">Points</li>
+  <li data-step="4">Propagate</li>
+  <li data-step="5">Review &amp; save</li>
+</ol>
+
+<div class="banner banner-error" id="error-banner" hidden></div>
+
+<!-- ------------------------------------------------------------------ -->
+<section class="panel step" id="step-1">
+  <h2>1. Load a NIfTI volume</h2>
+  <div class="grid-2">
+    <form id="upload-form">
+      <label>Upload <code>.nii</code> / <code>.nii.gz</code>
+        <input type="file" name="file" accept=".nii,.nii.gz,.gz" required>
+      </label>
+      <label class="check">
+        <input type="checkbox" name="dwi" {% if default_dwi %}checked{% endif %}>
+        DWI / 4-D input (use the first volume)
+      </label>
+      <button type="submit">Load upload</button>
+    </form>
+
+    <form id="server-form">
+      <label>...or a path on the server
+        <input type="text" name="path" placeholder="../niivue-images/chris_t1.nii.gz">
+      </label>
+      <label class="check">
+        <input type="checkbox" name="dwi" {% if default_dwi %}checked{% endif %}>
+        DWI / 4-D input
+      </label>
+      <button type="submit">Load path</button>
+      <button type="button" class="ghost" id="browse-btn">Browse server files</button>
+      <div id="browser" class="file-browser" hidden></div>
+    </form>
+  </div>
+  <p class="hint">
+    For DICOM input, convert first with a tool such as
+    <a href="https://gitlab.com/rordenlab/dcm2niix" rel="noreferrer noopener"
+       target="_blank">dcm2niix</a>.
+  </p>
+</section>
+
+<!-- ------------------------------------------------------------------ -->
+<section class="panel step" id="step-2" hidden>
+  <h2>2. Choose the plane and slice to annotate</h2>
+  <p class="hint">
+    Scroll on a pane to change slice (or use its number box), set the brightness
+    window, then confirm the plane you want SAMURAI to segment along.
+  </p>
+
+  <div class="viewer-row" id="plane-views">
+    {% for name in ['Axial', 'Coronal', 'Sagittal'] %}
+    <figure class="viewer" data-axis="{{ loop.index0 }}">
+      <figcaption>{{ name }} axis ({{ loop.index0 }}) &middot; slice <span class="slice-label">0</span></figcaption>
+      <canvas></canvas>
+      <div class="viewer-controls">
+        <input type="number" class="slice-input" min="0" value="0" step="1">
+        <button type="button" class="confirm-plane">Use this plane</button>
+      </div>
+    </figure>
+    {% endfor %}
+  </div>
+
+  <div class="sliders">
+    <label>Min brightness <input type="range" id="win-min" min="0" max="100" value="0" step="any">
+      <output id="win-min-out">0</output></label>
+    <label>Max brightness <input type="range" id="win-max" min="0" max="100" value="100" step="any">
+      <output id="win-max-out">100</output></label>
+  </div>
+  <div id="volume-info" class="meta"></div>
+</section>
+
+<!-- ------------------------------------------------------------------ -->
+<section class="panel step" id="step-3" hidden>
+  <h2>3. Select points on the chosen slice</h2>
+  <div class="grid-2">
+    <div>
+      <figure class="viewer large" id="prompt-view">
+        <figcaption>
+          <span id="prompt-plane">Axial</span> slice <span id="prompt-slice">0</span>
+          &middot; <span id="prompt-mode-label">Selection: Foreground</span>
+        </figcaption>
+        <canvas></canvas>
+      </figure>
+      <div class="toolbar">
+        <button type="button" id="flip-mode">Click to switch fg/bg</button>
+        <button type="button" id="undo">&larr;</button>
+        <button type="button" id="redo">&rarr;</button>
+        <label class="check"><input type="checkbox" id="box-mode"> Bounding box (SAMURAI-BB)</label>
+        <button type="button" id="clear-points" class="ghost">Clear</button>
+      </div>
+    </div>
+
+    <div>
+      <h3>Prediction likelihood mask</h3>
+      <p class="hint">Updates after every point, as the desktop preview window does.</p>
+      <figure class="viewer" id="preview-view">
+        <figcaption>Overlay on the annotated slice</figcaption>
+        <canvas></canvas>
+      </figure>
+      <div class="colorbar">
+        {% for stop in colorbar %}<i style="background: {{ stop }}"></i>{% endfor %}
+        <span class="cb-min">low</span><span class="cb-max">high</span>
+      </div>
+
+      <table class="kv" id="point-table"><tbody></tbody></table>
+
+      <div class="toolbar">
+        <button type="button" id="add-object" class="ghost" title="SAMURAI-BB multi-slice: annotate another object on another slice">
+          Add another object
+        </button>
+        <form id="import-points" class="inline">
+          <label class="ghost-file">Load points file
+            <input type="file" name="file" accept=".txt">
+          </label>
+        </form>
+      </div>
+      <button type="button" id="propagate" class="primary">Approve &amp; propagate through volume</button>
+      <button type="button" id="back-to-plane" class="ghost">Back to plane selection</button>
+    </div>
+  </div>
+</section>
+
+<!-- ------------------------------------------------------------------ -->
+<section class="panel step" id="step-4" hidden>
+  <h2>4. Propagating</h2>
+  <div class="progress"><div id="progress-bar"></div></div>
+  <p id="progress-message">Working...</p>
+  <button type="button" id="cancel-job" class="ghost">Cancel</button>
+</section>
+
+<!-- ------------------------------------------------------------------ -->
+<section class="panel step" id="step-5" hidden>
+  <h2>5. Review, edit and save</h2>
+  <p class="hint">
+    Scroll to move through slices. With <em>edit</em> on, clicking a voxel
+    toggles it in the output mask.
+  </p>
+  <div class="viewer-row" id="review-views">
+    {% for name in ['Axial', 'Coronal', 'Sagittal'] %}
+    <figure class="viewer" data-axis="{{ loop.index0 }}">
+      <figcaption>{{ name }} axis ({{ loop.index0 }}) &middot; slice <span class="slice-label">0</span></figcaption>
+      <canvas></canvas>
+      <div class="viewer-controls">
+        <input type="number" class="slice-input" min="0" value="0" step="1">
+      </div>
+    </figure>
+    {% endfor %}
+  </div>
+
+  <div class="sliders">
+    <label>Mask threshold
+      <input type="range" id="mask-threshold" min="-20" max="20" value="{{ default_threshold }}" step="any">
+      <output id="mask-threshold-out">{{ default_threshold }}</output>
+    </label>
+    <label class="check"><input type="checkbox" id="edit-mode"> Edit voxels on click</label>
+    <button type="button" id="reset-edits" class="ghost">Reset edits</button>
+    <span class="meta" id="mask-stats"></span>
+  </div>
+
+  <button type="button" id="save" class="primary">Confirm mask &amp; save output</button>
+  <div id="save-result"></div>
+</section>
+
+<section class="panel" id="files-panel" hidden>
+  <h2>Session files</h2>
+  <ul id="file-list"></ul>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>window.SAMURAI_DEFAULT_THRESHOLD = {{ default_threshold }};</script>
+<script src="{{ url_for('static', filename='js/manual.js') }}"></script>
+{% endblock %}

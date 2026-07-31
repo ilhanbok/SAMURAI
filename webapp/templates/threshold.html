@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}SAMURAI &middot; threshold lesion finding{% endblock %}
+
+{% block content %}
+<h1>Mode (ii) &middot; threshold-based lesion identification</h1>
+
+<div class="banner banner-error" id="error-banner" hidden></div>
+
+<section class="panel step" id="step-1">
+  <h2>1. Load a volume and set the threshold pass</h2>
+  <div class="grid-2">
+    <form id="upload-form">
+      <label>Upload <code>.nii</code> / <code>.nii.gz</code>
+        <input type="file" name="file" accept=".nii,.nii.gz,.gz" required>
+      </label>
+      <button type="submit">Load upload</button>
+    </form>
+    <form id="server-form">
+      <label>...or a path on the server
+        <input type="text" name="path" placeholder="../niivue-images/chris_t1.nii.gz">
+      </label>
+      <button type="submit">Load path</button>
+    </form>
+  </div>
+
+  <form id="threshold-form" class="params" hidden>
+    <h3>Threshold parameters</h3>
+    <div class="grid-3">
+      <label>Mode
+        <select name="mode">
+          <option value="RAW" selected>RAW</option>
+          <option value="QSM">QSM</option>
+        </select>
+      </label>
+      <label>Threshold <input type="number" name="cutoff" step="any" value="{{ defaults.RAW.cutoff }}"></label>
+      <label>Output CSV name <input type="text" name="output_csv" value="SAMURAI"></label>
+      <label>Gaussian blur &sigma; <input type="number" name="sigma" step="any" value="0" min="0"></label>
+      <label>Blank slices below z <input type="number" name="zero_slices_below" value="0" min="0"></label>
+      <label>Binarisation logit <input type="number" name="logit_threshold" step="any" value="2.0"></label>
+      <label>Min lesion volume (mm&sup3;) <input type="number" name="volume_min" step="any" value="{{ volume_min }}"></label>
+      <label>Max lesion volume (mm&sup3;) <input type="number" name="volume_max" step="any" value="{{ volume_max }}"></label>
+    </div>
+    <div class="toolbar">
+      <label class="check"><input type="checkbox" name="flip"> Lesions are dark (invert)</label>
+      <label class="check"><input type="checkbox" name="skullstrip"> Skull strip (needs FSL <code>bet</code>)</label>
+    </div>
+    <button type="submit" class="primary">Run threshold pass</button>
+  </form>
+</section>
+
+<section class="panel step" id="step-progress" hidden>
+  <h2>Working</h2>
+  <div class="progress"><div id="progress-bar"></div></div>
+  <p id="progress-message"></p>
+  <button type="button" id="cancel-job" class="ghost">Cancel</button>
+</section>
+
+<section class="panel step" id="step-2" hidden>
+  <h2>2. Candidate lesions</h2>
+  <p class="meta" id="catalog-meta"></p>
+  <div class="grid-2">
+    <div class="lesion-list">
+      <table class="lesions">
+        <thead><tr><th>#</th><th>Label</th><th>Volume (mm&sup3;)</th><th>Centre of mass</th><th></th></tr></thead>
+        <tbody id="lesion-rows"></tbody>
+      </table>
+    </div>
+    <div id="lesion-detail" hidden>
+      <h3>Candidate <span id="lesion-label"></span></h3>
+      <figure class="viewer large" id="lesion-view">
+        <figcaption>
+          Axial slice <span id="lesion-frame"></span> &middot;
+          <span id="lesion-voxels"></span> voxels on this slice &middot;
+          <span id="prompt-mode-label">Selection: Foreground</span>
+        </figcaption>
+        <canvas></canvas>
+      </figure>
+      <div class="toolbar">
+        <button type="button" id="flip-mode">Click to switch fg/bg</button>
+        <button type="button" id="undo">&larr;</button>
+        <button type="button" id="clear-points" class="ghost">Clear extra points</button>
+        <label class="check"><input type="checkbox" id="show-scatter" checked> Show threshold voxels</label>
+      </div>
+      <p class="hint">
+        Red dots are the thresholded lesion voxels; a sparsified subset
+        (&eta;&nbsp;=&nbsp;0.2) is sent to SAM2 as foreground prompts. Add your
+        own foreground/background points on top if the candidate needs help.
+      </p>
+      <div class="toolbar">
+        <button type="button" id="approve" class="primary">This is a lesion &mdash; segment it</button>
+        <button type="button" id="skip" class="ghost">Skip</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="panel" id="results-panel" hidden>
+  <h2>Approved lesions</h2>
+  <ul id="result-list"></ul>
+  <button type="button" id="merge" class="primary">Merge approved lesions into one mask</button>
+  <h3>Session files</h3>
+  <ul id="file-list"></ul>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.SAMURAI_MODE_DEFAULTS = {{ defaults | tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/threshold.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,8 @@
+# Extra dependencies for the web portal. The segmentation dependencies
+# (torch, sam2, ...) still come from ../requirements.txt and install_SAMURAI.*;
+# these are all the portal itself needs on top of numpy/nibabel/scipy/pillow.
+Flask>=3.0
+numpy
+nibabel
+scipy
+pillow

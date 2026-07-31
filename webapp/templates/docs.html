@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}SAMURAI &middot; workflow{% endblock %}
+
+{% block content %}
+<h1>Workflow &amp; portal notes</h1>
+
+<section class="panel">
+  <h2>How the portal maps onto the scripts</h2>
+  <table class="mapping">
+    <thead><tr><th>Desktop script</th><th>Portal</th><th>Back-end module</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>Adjunct_SAM_lesion_threshAndFilter_wrapper_01232025.py</code></td>
+        <td><a href="{{ url_for('manual') }}">Manual (mode i)</a></td>
+        <td><code>webapp/core/segmenter.py</code>, <code>volume.py</code></td>
+      </tr>
+      <tr>
+        <td><code>..._BoundingBox_01232025.py</code>, <code>..._BoundingBoxMultiSlice_...</code></td>
+        <td>Manual, with <em>Bounding box</em> ticked / <em>Add another object</em></td>
+        <td><code>webapp/core/segmenter.py</code></td>
+      </tr>
+      <tr>
+        <td><code>thresholdSAM_01062025.py</code>, <code>RAW_/QSM_lesion_threshAndFilter_wrapper.py</code>,
+            <code>..._01082025_NoShow.py</code></td>
+        <td><a href="{{ url_for('threshold_page') }}">Threshold (mode ii)</a></td>
+        <td><code>webapp/core/threshold.py</code></td>
+      </tr>
+      <tr>
+        <td><code>Utilities.py</code></td>
+        <td><a href="{{ url_for('utilities_page') }}">Utilities</a></td>
+        <td><code>webapp/core/utilities.py</code></td>
+      </tr>
+      <tr>
+        <td><code>dialogues.py</code> (matplotlib Yes/No/Input dialogs)</td>
+        <td>Inline buttons and forms</td>
+        <td>&mdash;</td>
+      </tr>
+      <tr>
+        <td><code>MaskEditor</code> / <code>MultiViewMaskEditor</code></td>
+        <td>Three-pane viewers with scroll, window and threshold controls</td>
+        <td><code>webapp/core/render.py</code></td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="panel">
+  <h2>Behavioural notes</h2>
+  <ul class="notes">
+    <li>
+      <strong>Orientation.</strong> Mode (i) works on
+      <code>np.flip(np.transpose(get_fdata()), 0)</code> and inverts that
+      transform before saving, exactly as the desktop script does. Mode (ii)
+      works in native orientation along the axial (third) axis, as the RAW/QSM
+      wrappers do.
+    </li>
+    <li>
+      <strong>Annotation frame.</strong> The desktop script prompts SAM2 at
+      <code>slice&nbsp;&minus;&nbsp;1</code> to line up with ITK-SNAP's 1-based
+      numbering, while displaying <code>slice</code>. The portal prompts the
+      slice it is showing you; set
+      <code>SAMURAI_ITKSNAP_OFFSET=1</code> to restore the old offset.
+    </li>
+    <li>
+      <strong>Propagation.</strong> Forward then reverse
+      <code>propagate_in_video</code>, the same two passes and the same
+      last-write-wins ordering as the scripts. Raw logits are kept so the
+      threshold slider behaves as it does in <code>MultiViewMaskEditor</code>.
+    </li>
+    <li>
+      <strong>Threshold CSV.</strong> Same
+      <code>COMs_x,COMs_y,COMs_z,volumes</code> layout as the desktop pipeline,
+      one row per label with row 0 as background (skipped when the candidates
+      are listed, as <code>thresholdSAM_01062025.py</code> does). The desktop
+      wrappers write <code>range(0, num_features)</code> and so silently drop
+      the highest label &mdash; one lesion per scan; the portal writes
+      <code>range(0, num_features + 1)</code> instead, which is a superset of
+      the old file and keeps row&nbsp;<em>i</em> = label&nbsp;<em>i</em>.
+    </li>
+    <li>
+      <strong>Lesion prompts.</strong> Each candidate contributes the voxels of
+      its largest slice, sparsified at &eta;&nbsp;=&nbsp;0.2, as foreground
+      points; propagated logits are binarised at 2.0. Both values are the
+      desktop defaults and both are adjustable in the form.
+    </li>
+    <li>
+      <strong>DUPLICATE.</strong> The CLI version of this utility references an
+      undefined <code>output_file</code> and cannot run; the portal's version
+      takes the output path it was always meant to take.
+    </li>
+    <li>
+      <strong>Working directory.</strong> Each browser session gets its own
+      workspace under <code>webapp/workspaces/</code>, playing the role of
+      <code>scripts/</code>. Intermediates (thresholded, labelled and mean-value
+      volumes, the JPEG stack, points and times files) land there and are listed
+      for download. Sessions expire after
+      <code>SAMURAI_SESSION_TTL</code> seconds.
+    </li>
+  </ul>
+</section>
+
+<section class="panel">
+  <h2>Standard operating protocol</h2>
+  <p>
+    The full protocol lives in <code>scripts/SAMURAIWorkflow.md</code>. In short:
+  </p>
+  <ol class="notes">
+    <li><strong>Collect output.</strong> Mode (i) produces
+      <code>output_SAMURAI_[yyyymmdd-hhmmss].nii.gz</code> plus a
+      <code>times_SAMURAI_*.txt</code>; mode (ii) produces one
+      <code>[csv]_240_lesionnum_&lt;n&gt;.nii.gz</code> per approved lesion plus
+      the summary CSV.</li>
+    <li><strong>Inspect before curating.</strong> Load the source scan as a base
+      layer and the mask as an overlay in ITK-SNAP or Flywheel, and check all
+      three cardinal planes.</li>
+    <li><strong>Curate.</strong> MERGE the per-lesion files, then ZERO spurious
+      slice ranges and DUPLICATE where a slice was missed.</li>
+    <li><strong>Hand-finish.</strong> SAMURAI captures edges and gradients well
+      but can be overzealous around a lesion; trim with a freehand polygon and
+      voxel painting, respecting the model's boundaries before making drastic
+      changes.</li>
+    <li><strong>Analyse.</strong> VOLUME for mask volumes, IRV for agreement
+      between raters or sessions.</li>
+  </ol>
+  <p class="hint">
+    SAMURAI is a tool, not a radiologist. Apply clinical discretion and expert
+    review before interpreting any output. This software is not intended for
+    clinical use.
+  </p>
+</section>
+{% endblock %}

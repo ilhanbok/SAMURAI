@@ -67,6 +67,10 @@ cd scripts
 
 There are two modes of operation: (i) Manual (GUI-based) selection and (ii) threshold-based lesion identification.
 
+Both are available either from the command line (below) or from the **web
+portal**, which runs the same Python back-end in a browser &mdash; see
+[Web portal](#web-portal).
+
 For DICOM files use a conversion tool such as [dcm2niix](https://gitlab.com/rordenlab/dcm2niix) to create input NIFTI file.
 
 Before execution, ensure all pip and anaconda environments are deactivated.
@@ -96,6 +100,42 @@ To use mode (ii):
 - After iterating over possible lesions, you have the option to inspect and approve each lesion or not.
 - Like for mode (i), there will be a pop-up point selection window to add additional foreground / background points before a final confirmation dialog
 - Each lesion has a unique identification number which will be appended to its output NIFTI file. These files can be merged and viewed as a final .nii mask.
+
+## Web portal
+____________________________________
+
+The same pipeline is available as a local web interface. Install the extra
+dependency (Flask) and start the server from the repository root:
+
+```bash
+pip install -r webapp/requirements-web.txt
+./run_web.sh          # macOS / Linux
+.\run_web.ps1         # Windows 11 (Anaconda Powershell)
+```
+
+Then open http://127.0.0.1:5000.
+
+- **Manual (mode i)** &mdash; upload or point at a NIfTI file, scroll the axial,
+coronal and sagittal panes to pick a slice, click intra-lesional (fg:1) and
+extra-lesional (bg:0) points or drag a bounding box (SAMURAI-BB), watch the
+prediction likelihood mask update, propagate through the volume, then adjust the
+mask threshold, toggle individual voxels and save
+`output_SAMURAI_[yyyymmdd-hhmmss].nii.gz`, `times_SAMURAI_*.txt` and
+`points_SAMURAI_*.txt`.
+- **Threshold (mode ii)** &mdash; run the RAW/QSM threshold pass, get the summary
+CSV and the candidate list, then inspect, approve or skip each candidate and
+segment it into `[csv_name]_240_lesionnum_<n>.nii.gz`.
+- **Utilities** &mdash; MERGE, ZERO, DUPLICATE, IRV and VOLUME as forms.
+- **Workflow** &mdash; the standard operating protocol, plus notes on how the
+portal maps onto the scripts.
+
+Each browser session gets its own working directory under `webapp/workspaces/`,
+which plays the role of `scripts/`; every file produced is listed for download.
+Configuration (checkpoint path, bind address, upload limit, session lifetime) is
+documented in [`webapp/README.md`](webapp/README.md).
+
+The portal serves a local research tool: it has no authentication, so bind it to
+localhost (the default) rather than exposing it on a shared network.
 
 ## Additional editing
 ____________________________________

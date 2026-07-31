@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}SAMURAI &middot; web portal{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <h1>Segment Anything Model Utilized for Radiomic Analysis of Images</h1>
+  <p>
+    Browser front-end for the SAMURAI pipeline. The Python back-end is the same
+    one the command-line scripts use &mdash; SAM2 video propagation over a NIfTI
+    slice stack &mdash; with the matplotlib/Qt windows replaced by these pages.
+  </p>
+</section>
+
+<section class="cards">
+  <a class="card" href="{{ url_for('manual') }}">
+    <h2>Mode (i) &middot; Manual selection</h2>
+    <p>
+      Pick a plane and slice, click intra-lesional (fg) and extra-lesional (bg)
+      points or drag a bounding box, watch the prediction likelihood mask
+      update, then propagate through the whole volume and edit the result.
+    </p>
+    <code>Adjunct_SAM_lesion_threshAndFilter_wrapper_01232025.py</code>
+  </a>
+  <a class="card" href="{{ url_for('threshold_page') }}">
+    <h2>Mode (ii) &middot; Threshold lesion finding</h2>
+    <p>
+      Threshold a RAW or QSM volume, label connected components, then walk the
+      candidate list: inspect each one, approve or skip it, add corrective
+      points and segment it into its own mask file.
+    </p>
+    <code>thresholdSAM_01062025.py</code>
+  </a>
+  <a class="card" href="{{ url_for('utilities_page') }}">
+    <h2>Utilities</h2>
+    <p>
+      MERGE, ZERO, DUPLICATE, IRV and VOLUME &mdash; the post-segmentation
+      curation toolkit, as web forms.
+    </p>
+    <code>Utilities.py</code>
+  </a>
+  <a class="card" href="{{ url_for('docs_page') }}">
+    <h2>Workflow</h2>
+    <p>
+      The standard operating protocol for curating SAMURAI output, plus the
+      notes on how this portal maps onto the desktop scripts.
+    </p>
+    <code>scripts/SAMURAIWorkflow.md</code>
+  </a>
+</section>
+
+<section class="panel">
+  <h2>Back-end status</h2>
+  <table class="kv">
+    <tr><th>Backend</th><td>{{ backend_status.backend }}</td></tr>
+    <tr><th>torch</th><td>{{ 'available' if backend_status.torch else 'not importable' }}</td></tr>
+    <tr><th>sam2</th><td>{{ 'available' if backend_status.sam2 else 'not importable' }}</td></tr>
+    <tr><th>Device</th><td>{{ backend_status.device or 'n/a' }}</td></tr>
+    <tr><th>Checkpoint</th>
+        <td><code>{{ backend_status.checkpoint or 'n/a' }}</code>
+        {{ '(present)' if backend_status.checkpoint_present else '(missing)' }}</td></tr>
+    <tr><th>config.json</th><td><code>{{ pipeline_config }}</code></td></tr>
+  </table>
+</section>
+{% endblock %}
