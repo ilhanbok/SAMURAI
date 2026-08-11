@@ -598,7 +598,7 @@ if pickleIt:
                         else:
                             # Optionally, plot the point where clicked
                             ax1.plot(coordinates[pos][0],coordinates[pos][1], 'wo',markersize=10)#markerfacecolor='k',markeredgecolor='w',markeredgewidth=1,markersize=4)
-                            ax1.plot(coordinates[pos][0],coordinates[pos][1], 'ko', markersize=8)
+                            ax1.plot(coordinates[pos][0],coordinates[pos][1], 'ro', markersize=8)
                 plt.draw()
                 if (len(coordinates) > 0 and ((event and event.inaxes is ax1) or init)) or ur:
                     if len(coordinates) > 0:
