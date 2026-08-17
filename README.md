@@ -37,7 +37,7 @@ macOS
 
 For macOS:
 ```bash
-python -m venv ./venvs/venv_SAMURAI/ && source ./venvs/venv_SAMURAI/bin/activate && git clone https://gitlab.com/ilhanbok/SAMURAI.git && cd SAMURAI && ./install_SAMURAI.sh && cd scripts
+python -m venv ./venvs/venv_SAMURAI/ && source ./venvs/venv_SAMURAI/bin/activate && git clone https://github.com/ilhanbok/SAMURAI.git && cd SAMURAI && ./install_SAMURAI.sh && cd scripts
 ```
 
 For Windows:<br><br>
@@ -46,7 +46,7 @@ Then run the following in Anaconda Powershell:
 ```bash
 python -m venv ./venvs/venv_SAMURAI/
 source ./venvs/venv_SAMURAI/bin/activate
-git clone https://gitlab.com/ilhanbok/SAMURAI.git
+git clone https://github.com/ilhanbok/SAMURAI.git
 cd SAMURAI
 ./install_SAMURAI.ps1
 cd scripts
