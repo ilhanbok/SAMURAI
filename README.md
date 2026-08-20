@@ -148,9 +148,11 @@ Example:
 
 ## About/Contact Information
 
-Patrick Belton (belton@neurosurgery.wisc.edu)<br>
-Ilhan Bok (ibok@wisc.edu)
+Patrick Belton: belton@neurosurgery.wisc.edu<br>
+Ilhan Bok: ibok@wisc.edu
 
-Department of Neurological Surgery<br>
-School of Medicine and Public Health<br>
-University of Wisconsin - Madison
+## Installation
+
+For the latest online version of the README.md see:
+
+<https://github.com/ilhanbok/SAMURAI/blob/stable/README.md>

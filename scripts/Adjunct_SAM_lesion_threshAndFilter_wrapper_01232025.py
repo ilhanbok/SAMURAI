@@ -19,13 +19,11 @@ import os.path
 import dialogues
 
 if __name__ == '__main__':
-    print('Usage: python Adjunct_SAM_lesion_threshAndFilter_wrapper_01232025.py NIFTI_PATH')
-    print('e.g. python Adjunct_SAM_lesion_threshAndFilter_wrapper_01232025.py ../niivue-images/chris_t1.nii.gz')
+    print('Usage: python Adjunct_SAM_lesion_threshAndFilter_wrapper_01232025.py NIFTI_PATH STOP')
+    print('e.g. python Adjunct_SAM_lesion_threshAndFilter_wrapper_01232025.py ../niivue-images/chris_t1.nii.gz 46')
     nifti_path = str(sys.argv[1])
     if len(sys.argv) >= 3:
-        preload_path = str(sys.argv[2])
-    else:
-        preload_path = None
+        STOP = int(str(sys.argv[2]))
 
 import pickle
 
@@ -598,7 +596,7 @@ if pickleIt:
                         else:
                             # Optionally, plot the point where clicked
                             ax1.plot(coordinates[pos][0],coordinates[pos][1], 'wo',markersize=10)#markerfacecolor='k',markeredgecolor='w',markeredgewidth=1,markersize=4)
-                            ax1.plot(coordinates[pos][0],coordinates[pos][1], 'ko', markersize=8)
+                            ax1.plot(coordinates[pos][0],coordinates[pos][1], 'ro', markersize=8)
                 plt.draw()
                 if (len(coordinates) > 0 and ((event and event.inaxes is ax1) or init)) or ur:
                     if len(coordinates) > 0:
@@ -900,6 +898,8 @@ if pickleIt:
     # run propagation throughout the video and collect the results in a dict
     video_segments = {}  # video_segments contains the per-frame segmentation results
     for out_frame_idx, out_obj_ids, out_mask_logits in video_predictor.propagate_in_video(inference_state):
+        if out_frame_idx < STOP:
+            break
         print(out_frame_idx)
         video_segments[out_frame_idx] = {
             out_obj_id: out_mask_logits[i].cpu().numpy()
@@ -910,6 +910,8 @@ if pickleIt:
     # reverse video
 
     for out_frame_idx, out_obj_ids, out_mask_logits in video_predictor.propagate_in_video(inference_state,reverse=True):
+        if out_frame_idx < STOP:
+            break
         video_segments[out_frame_idx] = {
             out_obj_id: out_mask_logits[i].cpu().numpy()
             for i, out_obj_id in enumerate(out_obj_ids)
