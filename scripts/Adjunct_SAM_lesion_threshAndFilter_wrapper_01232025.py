@@ -437,7 +437,10 @@ class MultiViewMaskEditor:
         self.imgs[1].set_array(self.volume[:, self.slices[1], :])
         self.imgs[2].set_array(self.volume[:, :, self.slices[2]])
         for i, ax in enumerate(self.axes):
-            ax.set_title(f'{self.orientations[i]} Axis ({i}) - Slice {self.slices[i]}')
+            if i == 0:
+                ax.set_title(f'{self.orientations[i]} Axis ({i}) - Slice {len(self.volume[:,0,0])-self.slices[i]}')
+            else:
+                ax.set_title(f'{self.orientations[i]} Axis ({i}) - Slice {self.slices[i]}')
         self.fig.canvas.draw()
 
     def on_scroll(self, event):
@@ -492,6 +495,12 @@ class MultiViewMaskEditor:
         except Exception as e:
             pass
         self.update_display()
+    
+    def get_correct_index(self, s):
+        if self.axis == 0:
+            return len(self.volume[:,0,0])-int(s)
+        else:
+            return int(s)
 
 skull_strip = False
 if skull_strip:
@@ -662,7 +671,7 @@ if pickleIt:
 
 
 
-    havearray = dialogues.call('Did you preload an array of points? (Yes/No)')
+    havearray = "No"# dialogues.call('Did you preload an array of points? (Yes/No)')
     #frame_names = np.array(list(range(data.shape[2]))).astype(str)
     coordinates = []
     preloaded_it = False
@@ -898,7 +907,7 @@ if pickleIt:
     # run propagation throughout the video and collect the results in a dict
     video_segments = {}  # video_segments contains the per-frame segmentation results
     for out_frame_idx, out_obj_ids, out_mask_logits in video_predictor.propagate_in_video(inference_state):
-        if out_frame_idx < STOP:
+        if editor.get_correct_index(out_frame_idx)-1 <= STOP:
             break
         print(out_frame_idx)
         video_segments[out_frame_idx] = {
@@ -910,7 +919,7 @@ if pickleIt:
     # reverse video
 
     for out_frame_idx, out_obj_ids, out_mask_logits in video_predictor.propagate_in_video(inference_state,reverse=True):
-        if out_frame_idx < STOP:
+        if editor.get_correct_index(out_frame_idx)-1 <= STOP:
             break
         video_segments[out_frame_idx] = {
             out_obj_id: out_mask_logits[i].cpu().numpy()
