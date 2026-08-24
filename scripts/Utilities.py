@@ -2,6 +2,12 @@ import os
 import numpy as np
 import nibabel as nib
 
+valids = ['MERGE','DUPLICATE','ZERO','IRV','VOLUME']
+
+def print_help_message():
+    print(f'Your options are: {valids}\n')
+    print(f'You can print the rest of the menu info by using: `python Utilities.py <option>')
+
 def merge_nifti(directory, output_file):
     """
     Merges all NIfTI files in a directory by performing a voxel-wise logical OR operation.
@@ -107,6 +113,38 @@ def print_IRVDC(mask1,mask2):
     print('Dice Score Coefficient: {0}'.format(DSC))
     return CohenIRV
 
+def index_by_prefix(folder_path, prefix_len=7):
+    """
+    Indexes the NIfTI files in a folder by the leading characters of their
+    filenames, so that files can be paired across folders even when the rest
+    of the name differs (e.g. 01_1009_MANUAL.nii vs 01_1009_SAM_final.nii.gz).
+
+    Parameters:
+        folder_path (str): Path to the directory containing NIfTI files.
+        prefix_len (int): Number of leading characters used as the subject key.
+
+    Returns:
+        (dict, dict): {prefix: file_path} for the first file found for each
+        prefix, and {prefix: [all_paths]} for any prefix seen more than once.
+    """
+    index = {}
+    duplicates = {}
+
+    for filename in sorted(os.listdir(folder_path)):
+        if not (filename.endswith(".nii") or filename.endswith(".nii.gz")):
+            continue
+
+        prefix = filename[:prefix_len]
+        file_path = os.path.join(folder_path, filename)
+
+        if prefix in index:
+            duplicates.setdefault(prefix, [index[prefix]]).append(file_path)
+        else:
+            index[prefix] = file_path
+
+    return index, duplicates
+
+
 import nibabel as nib
 import numpy as np
 
@@ -172,7 +210,12 @@ import numpy as np
 if __name__ == "__main__":
 
     args = sys.argv
-    type = args[1]
+    if len(args) > 1:
+        type = args[1].lower()
+    else:
+        print_help_message()
+        print('PLEASE enter a valid option!')
+        quit()
     args = [sys.argv[0]]
     for i in range(2,len(sys.argv)):
         args.append(sys.argv[i])
@@ -184,7 +227,8 @@ if __name__ == "__main__":
     #slice_range = (0, 179)  # Slices 125 to 0
 
     # Example usage
-    if type == "MERGE":
+    match type:
+      case "merge":
 
         if len(sys.argv) != 3:
             print("""1. `MERGE`
@@ -204,7 +248,7 @@ have been placed in the same folder `input_dir`
             print(f"Merged NIfTI file saved to {output_file}")
 
 
-    if type == "ZERO":
+      case "zero":
         print('test')
         # Ensure correct number of arguments
         if len(sys.argv) < 5 or len(sys.argv) > 6:
@@ -233,7 +277,7 @@ Used to delete slices within a range for spurious segmentation output.
 
 
     # Example usage
-    if type == "DUPLICATE":
+      case "duplicate":
         # input_file = "/Users/bok/Library/CloudStorage/Box-Box/Belton_Lab_Ilhan/Radiomics_project/Segmentation/Segmentation_smaller_lesions/07_1391_2wk_radiology(affine).nii.gz"
         # output_file = "/Users/bok/Library/CloudStorage/Box-Box/Belton_Lab_Ilhan/Radiomics_project/Segmentation/Segmentation_smaller_lesions/07_1391_2wk_radiology(affine).nii.gz"
         # slice_to_propagate = 140
@@ -259,7 +303,7 @@ Used to duplicate a slice from one layer to another within an input NIFTI
             duplicate(input_file, output_file, slice_to_propagate, slice_to_send_to)
             print(f"Modified NIfTI file saved to {output_file}")
 
-
+    
     # mask1 = '/Users/bok/Library/CloudStorage/Box-Box/Belton_Lab_Ilhan/QSM_Pipeline_Belton_Lab/qsm-proc-main/Segmentation_Results_Manual/006_1005_MANUAL_streak_corrected'
     # mask2 = '/Users/bok/Library/CloudStorage/Box-Box/Belton_Lab_Ilhan/QSM_Pipeline_Belton_Lab/qsm-proc-main/Segmentation_Results/06_1005_Segmentation_01222025_Done.nii'
     # mask3 = '/Users/bok/Library/CloudStorage/Box-Box/Belton_Lab_Ilhan/QSM_Pipeline_Belton_Lab/qsm-proc-main/06_1005_MERGED_03032025.nii'
@@ -310,50 +354,73 @@ Used to duplicate a slice from one layer to another within an input NIFTI
     # '10_1137'
     # ]
 
-    if type == "IRV":
+      case "irv":
         # Ensure correct number of arguments
-        if len(sys.argv) != 3:
+        if len(sys.argv) not in (3, 4):
             print("""1. `IRV`
-- Prerequisites: Ensure that each pair of files used for this script in each directory
-have the same name
+- Prerequisites: Ensure that each pair of files to be compared shares the same
+leading 7 characters (e.g. `01_1009`). The rest of each filename is ignored,
+so `01_1009_MANUAL.nii` and `01_1009_SAM_final.nii.gz` will be paired.
 - Description:
 Used to determine inter-rater variability (IRV) across a set of subjects.
 - Usage:
-`python Utilities.py IRV dir_1 dir_2`
+`python Utilities.py IRV dir_1 dir_2 (prefix_length)`
 - Example:
 `python Utilities.py IRV IRV_Alice/ IRV_Bob/`
-- Output: The inter-rater variability between each pair of subjects as well as
-the average and standard deviation across the whole set of subjects. An IRV of IRV<0.5 is considered poor, 0.5<IRV<0.7 is good, and IRV>0.7 is excellent.""")
+- Output: The inter-rater variability between each matched pair of subjects as
+well as the average and standard deviation across the matched set, followed by
+a list of any subjects that could not be paired. An IRV of IRV<0.5 is considered
+poor, 0.5<IRV<0.7 is good, and IRV>0.7 is excellent.""")
         else:
             folder_path1 = sys.argv[1]
             folder_path2 = sys.argv[2]
+            prefix_len = int(sys.argv[3]) if len(sys.argv) == 4 else 7
+
+            index1, dupes1 = index_by_prefix(folder_path1, prefix_len)
+            index2, dupes2 = index_by_prefix(folder_path2, prefix_len)
+
+            # Warn about ambiguous prefixes rather than silently picking one
+            for folder_path, dupes in ((folder_path1, dupes1), (folder_path2, dupes2)):
+                for prefix in sorted(dupes):
+                    names = [os.path.basename(p) for p in dupes[prefix]]
+                    print('WARNING: prefix \'{0}\' matches {1} files in {2}: {3}. Using {4}.'.format(
+                        prefix, len(names), folder_path, ', '.join(names), names[0]))
+
+            matched = sorted(set(index1) & set(index2))
+            unmatched1 = sorted(set(index1) - set(index2))
+            unmatched2 = sorted(set(index2) - set(index1))
 
             IRVres = []
+            for prefix in matched:
+                print('\n{0}  |  {1}  vs  {2}'.format(
+                    prefix,
+                    os.path.basename(index1[prefix]),
+                    os.path.basename(index2[prefix])))
+                IRVres.append(print_IRVDC(index1[prefix], index2[prefix]))
 
-            SAMS = []
-            MANUALS = []
-            #folder_path1 = '/Users/bok/Library/CloudStorage/Box-Box/Belton_Lab_Ilhan/Radiomics_project/Segmentation/Bok_Nifti/Snake_assisted_manual/Manual/'
-            #folder_path2 = '/Users/bok/Library/CloudStorage/Box-Box/Belton_Lab_Ilhan/Radiomics_project/Segmentation/Bok_Nifti/SAM_assisted/SAM/'
-            for filename in sorted(os.listdir(folder_path1)):
-                if filename.endswith(".nii") or filename.endswith(".nii.gz"):
-                    file_path = os.path.join(folder_path1, filename)
-                    SAMS.append(file_path)
-            for filename in sorted(os.listdir(folder_path2)):
-                if filename.endswith(".nii") or filename.endswith(".nii.gz"):
-                    file_path = os.path.join(folder_path2, filename)
-                    MANUALS.append(file_path)
+            print('\n===== SUMMARY =====')
+            print('Matched pairs: {0}'.format(len(matched)))
+            if IRVres:
+                print('Mean IRV: {0}'.format(np.mean(IRVres)))
+                print('Std IRV: {0}'.format(np.std(IRVres)))
+            else:
+                print('No pairs were matched - check that the leading {0} characters agree.'.format(prefix_len))
 
-            print((MANUALS))
-            print((SAMS))
-            for i in range(len(MANUALS)):
-                print('SAM/MANUAL')
-                IRVres.append(print_IRVDC(SAMS[i],MANUALS[i]))
+            if unmatched1 or unmatched2:
+                print('\n===== UNMATCHED =====')
+                if unmatched1:
+                    print('Only in {0} ({1}):'.format(folder_path1, len(unmatched1)))
+                    for prefix in unmatched1:
+                        print('  {0}  ->  {1}'.format(prefix, os.path.basename(index1[prefix])))
+                if unmatched2:
+                    print('Only in {0} ({1}):'.format(folder_path2, len(unmatched2)))
+                    for prefix in unmatched2:
+                        print('  {0}  ->  {1}'.format(prefix, os.path.basename(index2[prefix])))
+            else:
+                print('All files were matched.')
 
-            print(np.mean(IRVres))
-            print(np.std(IRVres))
 
-
-    if type == "VOLUME":
+      case "volume":
         # Ensure correct number of arguments
         if len(sys.argv) != 3:
             print("""2. `VOLUME`
@@ -369,3 +436,6 @@ the average and standard deviation across the whole set of subjects. An IRV of I
             output_csv = sys.argv[2]
 
             process_folder(subject_folder, output_csv)
+      case _:
+          print_help_message()
+          quit()
