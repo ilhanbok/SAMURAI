@@ -37,7 +37,12 @@ macOS
 
 For macOS:
 ```bash
-python -m venv ./venvs/venv_SAMURAI/ && source ./venvs/venv_SAMURAI/bin/activate && git clone https://github.com/ilhanbok/SAMURAI.git && cd SAMURAI && ./install_SAMURAI.sh && cd scripts
+python -m venv ./venvs/venv_SAMURAI/
+source ./venvs/venv_SAMURAI/bin/activate
+git clone https://github.com/ilhanbok/SAMURAI.git
+cd SAMURAI
+./install_SAMURAI.sh
+cd scripts
 ```
 
 For Windows:<br><br>
@@ -52,7 +57,7 @@ cd SAMURAI
 cd scripts
 ```
 
-This should take about 5 minutes
+This should take about 5 minutes. If any step of the installation script causes an error, correct the error, locate the corresponding line in `install_SAMURAI.sh/ps1` and re-run all subsequent steps.
 
 Example open-access nifti files are here:
 https://github.com/neurolabusc/niivue-images.git

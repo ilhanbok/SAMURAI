@@ -89,29 +89,56 @@ import nibabel as nib
 import numpy as np
 import os
 
-def print_IRVDC(mask1,mask2):
+def print_IRVDC(mask1, mask2):
     # Load NIfTI file and mask
     mask1_img = nib.load(mask1)
     mask2_img = nib.load(mask2)
-
+ 
     # Get data arrays
     mask1_data = (mask1_img.get_fdata() > 0).astype(bool)
     mask2_data = (mask2_img.get_fdata() > 0).astype(bool)
-
-    # As a sanity check, try setting one of the two arrays to all zeros
-    #mask2_data = np.zeros(mask2_data.shape).astype(bool)
-
-    TP = np.sum(mask1_data*mask2_data)
-    TN = np.sum(~mask1_data*~mask2_data)
-    FN = np.sum(~mask1_data*mask2_data)
-    FP = np.sum(mask1_data*~mask2_data)
-    print(TP)
-    CohenIRV = 2*(TP*TN  -  FN*FP)/((TP+FP)*(FP+TN)+(TP+FN)*(FN+TN))
+ 
+    if mask1_data.shape != mask2_data.shape:
+        raise ValueError('Shape mismatch: {0} vs {1}'.format(
+            mask1_data.shape, mask2_data.shape))
+ 
+    # int() forces Python's arbitrary-precision integers. np.sum() on a bool
+    # array returns the platform default int, which is int32 on Windows with
+    # numpy < 2.0; TP*TN then overflows (TN alone is ~6e6 for a typical
+    # volume) and wraps silently, which is what produced kappa = -122.
+    TP = int(np.count_nonzero(mask1_data & mask2_data))
+    TN = int(np.count_nonzero(~mask1_data & ~mask2_data))
+    FN = int(np.count_nonzero(~mask1_data & mask2_data))
+    FP = int(np.count_nonzero(mask1_data & ~mask2_data))
+ 
+    denom = (TP + FP) * (FP + TN) + (TP + FN) * (FN + TN)
+    if denom == 0:
+        # Both raters marked every voxel the same way (all empty or all full);
+        # chance agreement is 1, so kappa is undefined.
+        CohenIRV = float('nan')
+        print('WARNING: masks are degenerate (all-empty or all-full), '
+              'Cohen kappa undefined.')
+    else:
+        CohenIRV = 2 * (TP * TN - FN * FP) / denom
+        if not -1.0 <= CohenIRV <= 1.0:
+            # Cannot happen with exact arithmetic; catches any future
+            # regression to a fixed-width accumulator.
+            raise ArithmeticError(
+                'Cohen kappa out of range ({0}) - counts overflowed. '
+                'TP={1} TN={2} FP={3} FN={4}'.format(
+                    CohenIRV, TP, TN, FP, FN))
     print('Cohen Inter-rater reliability: {0}'.format(CohenIRV))
-
-    DSC = 2*(TP)/(np.sum(mask1_data)+np.sum(mask2_data))
+ 
+    mask_total = int(np.count_nonzero(mask1_data)) + \
+        int(np.count_nonzero(mask2_data))
+    if mask_total == 0:
+        DSC = float('nan')
+        print('WARNING: both masks are empty, Dice Score Coefficient '
+              'undefined.')
+    else:
+        DSC = 2 * TP / mask_total
     print('Dice Score Coefficient: {0}'.format(DSC))
-    return CohenIRV
+    return CohenIRV, DSC
 
 def index_by_prefix(folder_path, prefix_len=7):
     """
@@ -356,7 +383,7 @@ Used to duplicate a slice from one layer to another within an input NIFTI
 
       case "irv":
         # Ensure correct number of arguments
-        if len(sys.argv) not in (3, 4):
+        if len(sys.argv) not in (3, 4, 5):
             print("""1. `IRV`
 - Prerequisites: Ensure that each pair of files to be compared shares the same
 leading 7 characters (e.g. `01_1009`). The rest of each filename is ignored,
@@ -364,17 +391,33 @@ so `01_1009_MANUAL.nii` and `01_1009_SAM_final.nii.gz` will be paired.
 - Description:
 Used to determine inter-rater variability (IRV) across a set of subjects.
 - Usage:
-`python Utilities.py IRV dir_1 dir_2 (prefix_length)`
+`python Utilities.py IRV dir_1 dir_2 (output_csv) (prefix_length)`
 - Example:
 `python Utilities.py IRV IRV_Alice/ IRV_Bob/`
+`python Utilities.py IRV IRV_Alice/ IRV_Bob/ dice_scores.csv`
 - Output: The inter-rater variability between each matched pair of subjects as
 well as the average and standard deviation across the matched set, followed by
 a list of any subjects that could not be paired. An IRV of IRV<0.5 is considered
-poor, 0.5<IRV<0.7 is good, and IRV>0.7 is excellent.""")
+poor, 0.5<IRV<0.7 is good, and IRV>0.7 is excellent.
+A CSV of `Prefix,Dice Score Coefficient` is also written, one row per matched
+pair, defaulting to IRV_DSC.csv in the current directory.""")
         else:
             folder_path1 = sys.argv[1]
             folder_path2 = sys.argv[2]
-            prefix_len = int(sys.argv[3]) if len(sys.argv) == 4 else 7
+            output_csv = 'IRV_DSC.csv'
+            prefix_len = 7
+
+            if len(sys.argv) >= 4:
+                # A bare integer here still means prefix length, so the older
+                # `IRV dir_1 dir_2 9` form does not silently become a filename.
+                if sys.argv[3].isdigit():
+                    prefix_len = int(sys.argv[3])
+                    print('Read \'{0}\' as the prefix length; writing the CSV to {1}.'.format(
+                        sys.argv[3], output_csv))
+                else:
+                    output_csv = sys.argv[3]
+            if len(sys.argv) == 5:
+                prefix_len = int(sys.argv[4])
 
             index1, dupes1 = index_by_prefix(folder_path1, prefix_len)
             index2, dupes2 = index_by_prefix(folder_path2, prefix_len)
@@ -391,18 +434,31 @@ poor, 0.5<IRV<0.7 is good, and IRV>0.7 is excellent.""")
             unmatched2 = sorted(set(index2) - set(index1))
 
             IRVres = []
+            DSCres = []
             for prefix in matched:
                 print('\n{0}  |  {1}  vs  {2}'.format(
                     prefix,
                     os.path.basename(index1[prefix]),
                     os.path.basename(index2[prefix])))
-                IRVres.append(print_IRVDC(index1[prefix], index2[prefix]))
+                irv, dsc = print_IRVDC(index1[prefix], index2[prefix])
+                IRVres.append(irv)
+                DSCres.append(dsc)
+
+            # One row per matched pair, in the same order as the printout
+            with open(output_csv, 'w', newline='') as dscf:
+                writer = csv.writer(dscf)
+                writer.writerow(['Prefix', 'Dice Score Coefficient'])
+                for prefix, dsc in zip(matched, DSCres):
+                    writer.writerow([prefix, dsc])
+            print('\nWrote {0} ({1} row(s))'.format(output_csv, len(matched)))
 
             print('\n===== SUMMARY =====')
             print('Matched pairs: {0}'.format(len(matched)))
             if IRVres:
-                print('Mean IRV: {0}'.format(np.mean(IRVres)))
-                print('Std IRV: {0}'.format(np.std(IRVres)))
+                print('Mean IRV: {0}'.format(np.nanmean(IRVres)))
+                print('Std IRV: {0}'.format(np.nanstd(IRVres)))
+                print('Mean DSC: {0}'.format(np.nanmean(DSCres)))
+                print('Std DSC: {0}'.format(np.nanstd(DSCres)))
             else:
                 print('No pairs were matched - check that the leading {0} characters agree.'.format(prefix_len))
 
