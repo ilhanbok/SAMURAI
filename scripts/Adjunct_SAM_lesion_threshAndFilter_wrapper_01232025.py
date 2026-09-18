@@ -19,13 +19,11 @@ import os.path
 import dialogues
 
 if __name__ == '__main__':
-    print('Usage: python Adjunct_SAM_lesion_threshAndFilter_wrapper_01232025.py NIFTI_PATH')
-    print('e.g. python Adjunct_SAM_lesion_threshAndFilter_wrapper_01232025.py ../niivue-images/chris_t1.nii.gz')
+    print('Usage: python Adjunct_SAM_lesion_threshAndFilter_wrapper_01232025.py NIFTI_PATH STOP')
+    print('e.g. python Adjunct_SAM_lesion_threshAndFilter_wrapper_01232025.py ../niivue-images/chris_t1.nii.gz 46')
     nifti_path = str(sys.argv[1])
     if len(sys.argv) >= 3:
-        preload_path = str(sys.argv[2])
-    else:
-        preload_path = None
+        STOP = int(str(sys.argv[2]))
 
 import pickle
 
@@ -439,7 +437,10 @@ class MultiViewMaskEditor:
         self.imgs[1].set_array(self.volume[:, self.slices[1], :])
         self.imgs[2].set_array(self.volume[:, :, self.slices[2]])
         for i, ax in enumerate(self.axes):
-            ax.set_title(f'{self.orientations[i]} Axis ({i}) - Slice {self.slices[i]}')
+            if i == 0:
+                ax.set_title(f'{self.orientations[i]} Axis ({i}) - Slice {len(self.volume[:,0,0])-self.slices[i]}')
+            else:
+                ax.set_title(f'{self.orientations[i]} Axis ({i}) - Slice {self.slices[i]}')
         self.fig.canvas.draw()
 
     def on_scroll(self, event):
@@ -494,6 +495,12 @@ class MultiViewMaskEditor:
         except Exception as e:
             pass
         self.update_display()
+    
+    def get_correct_index(self, s):
+        if self.axis == 0:
+            return len(self.volume[:,0,0])-int(s)
+        else:
+            return int(s)
 
 skull_strip = False
 if skull_strip:
@@ -598,7 +605,7 @@ if pickleIt:
                         else:
                             # Optionally, plot the point where clicked
                             ax1.plot(coordinates[pos][0],coordinates[pos][1], 'wo',markersize=10)#markerfacecolor='k',markeredgecolor='w',markeredgewidth=1,markersize=4)
-                            ax1.plot(coordinates[pos][0],coordinates[pos][1], 'ko', markersize=8)
+                            ax1.plot(coordinates[pos][0],coordinates[pos][1], 'ro', markersize=8)
                 plt.draw()
                 if (len(coordinates) > 0 and ((event and event.inaxes is ax1) or init)) or ur:
                     if len(coordinates) > 0:
@@ -664,7 +671,7 @@ if pickleIt:
 
 
 
-    havearray = dialogues.call('Did you preload an array of points? (Yes/No)')
+    havearray = "No"# dialogues.call('Did you preload an array of points? (Yes/No)')
     #frame_names = np.array(list(range(data.shape[2]))).astype(str)
     coordinates = []
     preloaded_it = False
@@ -900,6 +907,8 @@ if pickleIt:
     # run propagation throughout the video and collect the results in a dict
     video_segments = {}  # video_segments contains the per-frame segmentation results
     for out_frame_idx, out_obj_ids, out_mask_logits in video_predictor.propagate_in_video(inference_state):
+        if editor.get_correct_index(out_frame_idx)-1 <= STOP:
+            break
         print(out_frame_idx)
         video_segments[out_frame_idx] = {
             out_obj_id: out_mask_logits[i].cpu().numpy()
@@ -910,6 +919,8 @@ if pickleIt:
     # reverse video
 
     for out_frame_idx, out_obj_ids, out_mask_logits in video_predictor.propagate_in_video(inference_state,reverse=True):
+        if editor.get_correct_index(out_frame_idx)-1 <= STOP:
+            break
         video_segments[out_frame_idx] = {
             out_obj_id: out_mask_logits[i].cpu().numpy()
             for i, out_obj_id in enumerate(out_obj_ids)
