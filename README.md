@@ -154,7 +154,7 @@ Example:
 ## About/Contact Information
 
 Patrick Belton: belton@neurosurgery.wisc.edu<br>
-Ilhan Bok: ibok@wisc.edu
+Ilhan Bok: ilhanbok2008@gmail.com<br>
 
 ## Installation
 
