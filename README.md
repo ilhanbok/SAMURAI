@@ -35,7 +35,7 @@ macOS
 
 ## Installation
 
-For macOS:
+For macOS and Unix:
 ```bash
 python -m venv ./venvs/venv_SAMURAI/
 source ./venvs/venv_SAMURAI/bin/activate
@@ -130,8 +130,9 @@ for example:
 
 You may also run SAMURAI multiple times to generate more masks for aggregation
 
-The following Python scripts are intended to help with editing NIFTI files
-produced by SAMURAI.
+## SAMURAI toolkit
+
+The following cmd-line options for `scripts/Utilities.py` are intended to help with editing NIFTI files and processing data produced by SAMURAI in aggregate.
 
 1. MERGE.py
 Description: Combine multiple NIFTI files into a single NIFTI file.

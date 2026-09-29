@@ -1,6 +1,7 @@
 niivue-images/
 sam2/
 scripts/temp_jpeg_stack
+scripts/temp_jpeg_stack_*
 venvs/
 ./.*
 scripts/.*
