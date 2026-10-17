@@ -5,6 +5,7 @@
 
   * [1.0.0 to 1.1.0 Changelog](docs/CHANGELOG.md)
 
+This project uses semantic versioning.
 ## Introduction
 
 Our abstract:
